@@ -4,15 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0" />
   <title>Video Reels</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/files/style.css">
 </head>
 <body>
   <div class="logo">
-    <img src="your-logo.png" alt="Logo">
+    <img src="/files/your-logo.png" alt="Logo">
   </div>
 
 <div class="sound-btn" id="soundBtn">
-  <img src="mute.png" alt="Mute/Unmute" id="soundIcon">
+  <img src="/files/mute.png" alt="Mute/Unmute" id="soundIcon">
 </div>
 
 <!-- Object-fit toggle button -->
@@ -33,7 +33,7 @@ let infoTimeout;
 let isMuted = true; // initial state
 
 // Load videos from JSON
-fetch('videos.json')
+fetch('/files/videos.json')
   .then(res => res.json())
   .then(data => {
     videosData = data;
@@ -133,7 +133,7 @@ function toggleMute() {
   wrappers.forEach(w => {
     w.querySelector('video').muted = isMuted;
   });
-  soundIcon.src = isMuted ? 'mute.png' : 'unmute.png';
+  soundIcon.src = isMuted ? '/files/mute.png' : '/files/unmute.png';
 }
 
 soundBtn.addEventListener('click', toggleMute);
