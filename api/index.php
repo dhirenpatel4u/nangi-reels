@@ -35,7 +35,7 @@ let isMuted = true;   // default mute
 let isContain = true; // default object-fit
 
 // Load videos from JSON
-fetch('/files/videos.json')
+fetch('videos.json')
   .then(res => res.json())
   .then(data => {
     videosData = data;
@@ -65,8 +65,7 @@ function createVideos() {
     vid.muted = isMuted;
     vid.loop = false;
     vid.playsInline = true;
-    vid.autoplay = true;
-    vid.setAttribute('preload', 'none');
+    vid.setAttribute('preload', 'none'); // do not autoplay
     vid.style.objectFit = isContain ? 'contain' : 'cover';
 
     const info = document.createElement('div');
@@ -126,6 +125,7 @@ function loadVideo(index) {
 
   if (!videoEl.src) {
     videoEl.src = data.src;
+    videoEl.load(); // preload without playing
   }
 }
 
@@ -140,16 +140,17 @@ function showVideo(index) {
     w.style.transform = `translateY(${(i - index) * 100}%)`;
 
     if (i === index) {
-      // ✅ Current video
+      // ✅ Current video: play
       loadVideo(i);
       videoEl.muted = isMuted;
       videoEl.style.objectFit = isContain ? 'contain' : 'cover';
       videoEl.play();
     } else if (i === index + 1) {
-      // ✅ Preload next video
+      // ✅ Next video: preload but DO NOT play
       loadVideo(i);
+      videoEl.pause();
     } else {
-      // ❌ Unload previous/far videos
+      // ❌ Unload all other videos
       videoEl.pause();
       videoEl.removeAttribute('src');
       videoEl.load();
@@ -174,7 +175,7 @@ function toggleMute() {
   wrappers.forEach(w => {
     w.querySelector('video').muted = isMuted;
   });
-  soundIcon.src = isMuted ? '/files/mute.png' : '/files/unmute.png';
+  soundIcon.src = isMuted ? 'mute.png' : 'unmute.png';
 }
 soundBtn.addEventListener('click', toggleMute);
 
