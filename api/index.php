@@ -7,19 +7,14 @@
   <link rel="stylesheet" href="/files/style.css">
 </head>
 <body>
-  <div class="logo">
-    <img src="/files/your-logo.png" alt="Logo">
-  </div>
-
-<div class="sound-btn" id="soundBtn">
-  <img src="/files/mute.png" alt="Mute/Unmute" id="soundIcon">
-</div>
-
-<!-- Object-fit toggle button -->
-<div class="fit-btn" id="fitBtn">Fit</div>
-<button class="fullscreen-btn">⤢</button>
-
   <div id="video-container"></div>
+
+  <!-- Top Controls -->
+  <div id="top-controls">
+    <button id="soundBtn"><img id="soundIcon" src="mute.png" width="20" alt="Sound"></button>
+    <button id="fitBtn">Fit</button>
+    <img id="fullscreenBtn" src="fullscreen-logo.png" alt="Fullscreen">
+  </div>
 
   <script>
 
@@ -27,13 +22,14 @@ const videoContainer = document.getElementById('video-container');
 const soundBtn = document.getElementById('soundBtn');
 const soundIcon = document.getElementById('soundIcon');
 const fitBtn = document.getElementById('fitBtn');
+const fullscreenBtn = document.getElementById('fullscreenBtn');
 
 let videosData = [];
 let videoOrder = [];
 let current = 0;
 let infoTimeout;
-let isMuted = true;   // default mute
-let isContain = true; // default object-fit
+let isMuted = true;
+let isContain = true;
 
 // Load videos from JSON
 fetch('/files/videos.json')
@@ -45,7 +41,7 @@ fetch('/files/videos.json')
     showVideo(current);
   });
 
-// Shuffle video order
+// Shuffle order
 function shuffleVideos() {
   videoOrder = [...Array(videosData.length).keys()];
   for (let i = videoOrder.length - 1; i > 0; i--) {
@@ -54,7 +50,7 @@ function shuffleVideos() {
   }
 }
 
-// Create video wrappers
+// Create video elements
 function createVideos() {
   videoOrder.forEach((videoIndex) => {
     const video = videosData[videoIndex];
@@ -66,10 +62,10 @@ function createVideos() {
     vid.muted = isMuted;
     vid.loop = false;
     vid.playsInline = true;
-    vid.setAttribute('preload', 'none'); // lazy load
+    vid.setAttribute('preload', 'none');
     vid.style.objectFit = isContain ? 'contain' : 'cover';
 
-    // Video info overlay
+    // Video info
     const info = document.createElement('div');
     info.classList.add('video-info');
     info.innerHTML = `
@@ -78,6 +74,8 @@ function createVideos() {
         <div class="progress-bar"></div>
       </div>
     `;
+
+    // Progress bar seek
     info.querySelector('.progress-bar-container').addEventListener('click', e => {
       if (!vid.duration) return;
       const rect = e.currentTarget.getBoundingClientRect();
@@ -85,39 +83,13 @@ function createVideos() {
       const percentage = clickX / rect.width;
       vid.currentTime = percentage * vid.duration;
     });
+
+    // Show overlay on tap
     vid.addEventListener('click', () => showInfo(info));
 
-    // Fullscreen button with logo image
-    const fsBtn = document.createElement('img');
-    fsBtn.src = 'fullscreen-logo.png'; // your logo image
-    fsBtn.classList.add('fullscreen-btn');
-    fsBtn.style.position = 'absolute';
-    fsBtn.style.top = '20px';
-    fsBtn.style.left = '20px';
-    fsBtn.style.width = '30px';
-    fsBtn.style.height = '30px';
-    fsBtn.style.cursor = 'pointer';
-    wrapper.appendChild(fsBtn);
-
-    fsBtn.addEventListener('click', () => {
-      if (vid.requestFullscreen) vid.requestFullscreen();
-      else if (vid.webkitRequestFullscreen) vid.webkitRequestFullscreen();
-      else if (vid.msRequestFullscreen) vid.msRequestFullscreen();
-
-      // Adjust orientation based on video aspect ratio
-      vid.addEventListener('loadedmetadata', () => {
-        const aspect = vid.videoWidth / vid.videoHeight;
-        if (aspect > 1) {
-          screen.orientation?.lock('landscape').catch(() => {});
-        } else {
-          screen.orientation?.lock('portrait').catch(() => {});
-        }
-      }, { once: true });
-    });
-
-    // Handle invalid video URL
+    // Auto-skip invalid video
     vid.addEventListener('error', () => {
-      console.warn(`Video failed to load: ${video.src}, skipping...`);
+      console.warn(`Video failed: ${video.src}, skipping...`);
       nextVideo();
     });
 
@@ -125,7 +97,7 @@ function createVideos() {
     wrapper.appendChild(info);
     videoContainer.appendChild(wrapper);
 
-    // Update progress bar
+    // Progress bar update
     vid.addEventListener('timeupdate', () => {
       if (vid.duration) {
         const progress = (vid.currentTime / vid.duration) * 100;
@@ -137,7 +109,7 @@ function createVideos() {
   });
 }
 
-// Show info overlay temporarily
+// Show info overlay
 function showInfo(info) {
   info.classList.add('show');
   clearTimeout(infoTimeout);
@@ -146,7 +118,7 @@ function showInfo(info) {
   }, 5000);
 }
 
-// Load video src (preload current or next)
+// Load video source
 function loadVideo(index) {
   const wrappers = document.querySelectorAll('.video-wrapper');
   if (index < 0 || index >= wrappers.length) return;
@@ -156,11 +128,11 @@ function loadVideo(index) {
 
   if (!videoEl.src) {
     videoEl.src = data.src;
-    videoEl.load(); // preload without autoplay
+    videoEl.load();
   }
 }
 
-// Show video by index
+// Show current video
 function showVideo(index) {
   const wrappers = document.querySelectorAll('.video-wrapper');
 
@@ -174,10 +146,9 @@ function showVideo(index) {
       videoEl.style.objectFit = isContain ? 'contain' : 'cover';
       videoEl.play();
     } else if (i === index + 1) {
-      loadVideo(i); // preload next video silently
+      loadVideo(i);
       videoEl.pause();
     } else {
-      // Unload all other videos
       videoEl.pause();
       videoEl.removeAttribute('src');
       videoEl.load();
@@ -195,26 +166,54 @@ function prevVideo() {
   showVideo(current);
 }
 
-// Mute/unmute button
+// Mute/unmute
 function toggleMute() {
   isMuted = !isMuted;
-  const wrappers = document.querySelectorAll('.video-wrapper');
-  wrappers.forEach(w => w.querySelector('video').muted = isMuted);
+  document.querySelectorAll('.video-wrapper video').forEach(v => v.muted = isMuted);
   soundIcon.src = isMuted ? '/files/mute.png' : '/files/unmute.png';
 }
 soundBtn.addEventListener('click', toggleMute);
 
-// Object-fit toggle
+// Fit/fill toggle
 fitBtn.addEventListener('click', () => {
   isContain = !isContain;
-  const wrappers = document.querySelectorAll('.video-wrapper');
-  wrappers.forEach(w => w.querySelector('video').style.objectFit = isContain ? 'contain' : 'cover');
+  document.querySelectorAll('.video-wrapper video').forEach(v => {
+    v.style.objectFit = isContain ? 'contain' : 'cover';
+  });
   fitBtn.textContent = isContain ? 'Fit' : 'Fill';
 });
 
+// Fullscreen
+fullscreenBtn.addEventListener('click', () => {
+  const wrappers = document.querySelectorAll('.video-wrapper');
+  const vid = wrappers[current].querySelector('video');
+
+  if (vid.requestFullscreen) {
+    vid.requestFullscreen();
+  } else if (vid.webkitEnterFullscreen) {
+    vid.webkitEnterFullscreen(); // iOS Safari
+    return;
+  } else if (vid.webkitRequestFullscreen) {
+    vid.webkitRequestFullscreen();
+  } else if (vid.msRequestFullscreen) {
+    vid.msRequestFullscreen();
+  }
+
+  const setOrientation = () => {
+    const aspect = vid.videoWidth / vid.videoHeight;
+    if (aspect > 1) {
+      screen.orientation?.lock('landscape').catch(() => {});
+    } else {
+      screen.orientation?.lock('portrait').catch(() => {});
+    }
+  };
+
+  if (vid.readyState >= 1) setOrientation();
+  else vid.addEventListener('loadedmetadata', setOrientation, { once: true });
+});
+
 // Swipe handling
-let startY = 0;
-let isSwiping = false;
+let startY = 0, isSwiping = false;
 document.addEventListener('touchstart', e => {
   if (e.touches.length !== 1) return;
   startY = e.touches[0].clientY;
@@ -247,13 +246,15 @@ document.addEventListener('keydown', e => {
 
 // Disable pull-to-refresh
 let touchStartY = 0;
-document.addEventListener('touchstart', e => { if(e.touches.length === 1) touchStartY = e.touches[0].clientY; }, { passive:false });
+document.addEventListener('touchstart', e => { 
+  if (e.touches.length === 1) touchStartY = e.touches[0].clientY; 
+}, { passive:false });
+
 document.addEventListener('touchmove', e => {
   const touchCurrentY = e.touches[0].clientY;
   const scrollTop = window.scrollY || document.documentElement.scrollTop;
   if(scrollTop === 0 && touchCurrentY > touchStartY) e.preventDefault();
 }, { passive:false });
-
 
 
 </script>
