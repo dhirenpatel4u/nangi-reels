@@ -31,7 +31,7 @@ let videosData = [];
 let videoOrder = [];
 let current = 0;
 let infoTimeout;
-let isMuted = true;  // default mute
+let isMuted = true;   // default mute
 let isContain = true; // default object-fit
 
 // Load videos from JSON
@@ -102,7 +102,7 @@ function createVideos() {
       }
     });
 
-    // Go next when video ends
+    // Auto next when video ends
     vid.addEventListener('ended', () => nextVideo());
   });
 }
@@ -134,21 +134,27 @@ function showVideo(index) {
   const wrappers = document.querySelectorAll('.video-wrapper');
 
   wrappers.forEach((w, i) => {
-    w.style.transform = `translateY(${(i - index) * 100}%)`;
     const videoEl = w.querySelector('video');
 
+    // Move video to correct position
+    w.style.transform = `translateY(${(i - index) * 100}%)`;
+
     if (i === index) {
-      loadVideo(i); // load current
+      // ✅ Current video
+      loadVideo(i);
       videoEl.muted = isMuted;
       videoEl.style.objectFit = isContain ? 'contain' : 'cover';
       videoEl.play();
+    } else if (i === index + 1) {
+      // ✅ Preload next video
+      loadVideo(i);
     } else {
+      // ❌ Unload previous/far videos
       videoEl.pause();
+      videoEl.removeAttribute('src');
+      videoEl.load();
     }
   });
-
-  // ✅ Only preload next video
-  loadVideo(index + 1);
 }
 
 // Next/previous
