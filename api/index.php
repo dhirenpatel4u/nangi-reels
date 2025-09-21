@@ -17,6 +17,7 @@
 
 <!-- Object-fit toggle button -->
 <div class="fit-btn" id="fitBtn">Fit</div>
+<button class="fullscreen-btn">⤢</button>
 
   <div id="video-container"></div>
 
@@ -53,7 +54,7 @@ function shuffleVideos() {
   }
 }
 
-// Create empty wrappers (lazy load later)
+// Create video wrappers
 function createVideos() {
   videoOrder.forEach((videoIndex) => {
     const video = videosData[videoIndex];
@@ -65,9 +66,10 @@ function createVideos() {
     vid.muted = isMuted;
     vid.loop = false;
     vid.playsInline = true;
-    vid.setAttribute('preload', 'none'); // do not autoplay
+    vid.setAttribute('preload', 'none'); // lazy load
     vid.style.objectFit = isContain ? 'contain' : 'cover';
 
+    // Video info overlay
     const info = document.createElement('div');
     info.classList.add('video-info');
     info.innerHTML = `
@@ -76,8 +78,6 @@ function createVideos() {
         <div class="progress-bar"></div>
       </div>
     `;
-
-    // Progress bar click → seek
     info.querySelector('.progress-bar-container').addEventListener('click', e => {
       if (!vid.duration) return;
       const rect = e.currentTarget.getBoundingClientRect();
@@ -85,9 +85,41 @@ function createVideos() {
       const percentage = clickX / rect.width;
       vid.currentTime = percentage * vid.duration;
     });
-
-    // Show info on tap
     vid.addEventListener('click', () => showInfo(info));
+
+    // Fullscreen button with logo image
+    const fsBtn = document.createElement('img');
+    fsBtn.src = 'fullscreen-logo.png'; // your logo image
+    fsBtn.classList.add('fullscreen-btn');
+    fsBtn.style.position = 'absolute';
+    fsBtn.style.top = '20px';
+    fsBtn.style.left = '20px';
+    fsBtn.style.width = '30px';
+    fsBtn.style.height = '30px';
+    fsBtn.style.cursor = 'pointer';
+    wrapper.appendChild(fsBtn);
+
+    fsBtn.addEventListener('click', () => {
+      if (vid.requestFullscreen) vid.requestFullscreen();
+      else if (vid.webkitRequestFullscreen) vid.webkitRequestFullscreen();
+      else if (vid.msRequestFullscreen) vid.msRequestFullscreen();
+
+      // Adjust orientation based on video aspect ratio
+      vid.addEventListener('loadedmetadata', () => {
+        const aspect = vid.videoWidth / vid.videoHeight;
+        if (aspect > 1) {
+          screen.orientation?.lock('landscape').catch(() => {});
+        } else {
+          screen.orientation?.lock('portrait').catch(() => {});
+        }
+      }, { once: true });
+    });
+
+    // Handle invalid video URL
+    vid.addEventListener('error', () => {
+      console.warn(`Video failed to load: ${video.src}, skipping...`);
+      nextVideo();
+    });
 
     wrapper.appendChild(vid);
     wrapper.appendChild(info);
@@ -101,7 +133,6 @@ function createVideos() {
       }
     });
 
-    // Auto next when video ends
     vid.addEventListener('ended', () => nextVideo());
   });
 }
@@ -115,7 +146,7 @@ function showInfo(info) {
   }, 5000);
 }
 
-// Load video src when needed
+// Load video src (preload current or next)
 function loadVideo(index) {
   const wrappers = document.querySelectorAll('.video-wrapper');
   if (index < 0 || index >= wrappers.length) return;
@@ -125,32 +156,28 @@ function loadVideo(index) {
 
   if (!videoEl.src) {
     videoEl.src = data.src;
-    videoEl.load(); // preload without playing
+    videoEl.load(); // preload without autoplay
   }
 }
 
-// Show a video by index
+// Show video by index
 function showVideo(index) {
   const wrappers = document.querySelectorAll('.video-wrapper');
 
   wrappers.forEach((w, i) => {
     const videoEl = w.querySelector('video');
-
-    // Move video to correct position
     w.style.transform = `translateY(${(i - index) * 100}%)`;
 
     if (i === index) {
-      // ✅ Current video: play
       loadVideo(i);
       videoEl.muted = isMuted;
       videoEl.style.objectFit = isContain ? 'contain' : 'cover';
       videoEl.play();
     } else if (i === index + 1) {
-      // ✅ Next video: preload but DO NOT play
-      loadVideo(i);
+      loadVideo(i); // preload next video silently
       videoEl.pause();
     } else {
-      // ❌ Unload all other videos
+      // Unload all other videos
       videoEl.pause();
       videoEl.removeAttribute('src');
       videoEl.load();
@@ -158,7 +185,7 @@ function showVideo(index) {
   });
 }
 
-// Next/previous
+// Next/previous video
 function nextVideo() {
   current = (current + 1) % videoOrder.length;
   showVideo(current);
@@ -168,32 +195,26 @@ function prevVideo() {
   showVideo(current);
 }
 
-// Toggle mute (applies to all videos)
+// Mute/unmute button
 function toggleMute() {
   isMuted = !isMuted;
   const wrappers = document.querySelectorAll('.video-wrapper');
-  wrappers.forEach(w => {
-    w.querySelector('video').muted = isMuted;
-  });
+  wrappers.forEach(w => w.querySelector('video').muted = isMuted);
   soundIcon.src = isMuted ? '/files/mute.png' : '/files/unmute.png';
 }
 soundBtn.addEventListener('click', toggleMute);
 
-// Toggle object-fit
+// Object-fit toggle
 fitBtn.addEventListener('click', () => {
   isContain = !isContain;
   const wrappers = document.querySelectorAll('.video-wrapper');
-  wrappers.forEach(w => {
-    const video = w.querySelector('video');
-    video.style.objectFit = isContain ? 'contain' : 'cover';
-  });
+  wrappers.forEach(w => w.querySelector('video').style.objectFit = isContain ? 'contain' : 'cover');
   fitBtn.textContent = isContain ? 'Fit' : 'Fill';
 });
 
 // Swipe handling
 let startY = 0;
 let isSwiping = false;
-
 document.addEventListener('touchstart', e => {
   if (e.touches.length !== 1) return;
   startY = e.touches[0].clientY;
@@ -204,8 +225,7 @@ document.addEventListener('touchmove', e => {
   if (!isSwiping) return;
   const moveY = e.touches[0].clientY;
   const deltaY = moveY - startY;
-  const wrappers = document.querySelectorAll('.video-wrapper');
-  wrappers.forEach((w, i) => {
+  document.querySelectorAll('.video-wrapper').forEach((w, i) => {
     w.style.transform = `translateY(${(i - current) * 100 + deltaY / window.innerHeight * 100}%)`;
   });
 }, { passive: false });
@@ -227,18 +247,13 @@ document.addEventListener('keydown', e => {
 
 // Disable pull-to-refresh
 let touchStartY = 0;
-document.addEventListener('touchstart', function(e) {
-  if (e.touches.length !== 1) return;
-  touchStartY = e.touches[0].clientY;
-}, { passive: false });
-
-document.addEventListener('touchmove', function(e) {
+document.addEventListener('touchstart', e => { if(e.touches.length === 1) touchStartY = e.touches[0].clientY; }, { passive:false });
+document.addEventListener('touchmove', e => {
   const touchCurrentY = e.touches[0].clientY;
   const scrollTop = window.scrollY || document.documentElement.scrollTop;
-  if (scrollTop === 0 && touchCurrentY > touchStartY) {
-    e.preventDefault();
-  }
-}, { passive: false });
+  if(scrollTop === 0 && touchCurrentY > touchStartY) e.preventDefault();
+}, { passive:false });
+
 
 
 </script>
