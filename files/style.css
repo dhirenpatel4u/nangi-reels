@@ -46,6 +46,18 @@ video {
   opacity: 1;
 }
 
+.logo {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+}
+
+.logo img {
+  width: 100px;
+  height: auto;
+}
+
 .progress-bar-container {
   margin-top: 5px;
   width: 90vw;
