@@ -33,7 +33,7 @@ let infoTimeout;
 let isMuted = true; // initial state
 
 // Load videos from JSON
-fetch('https://script.google.com/macros/s/AKfycbxMBFy1Zix7peh_8LGjJewllsmGvFiO4BNr74X1R5bPZhHWVUlaDXb1Ma4PKuurBWMc/exec')
+fetch('videos.json')
   .then(res => res.json())
   .then(data => {
     videosData = data;
