@@ -1,27 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0" />
-  <title>Video Reels</title>
-  <link rel="stylesheet" href="/files/style.css">
-</head>
-<body>
-  <div class="logo">
-    <img src="/files/your-logo.png" alt="Logo">
-  </div>
-
-<div class="sound-btn" id="soundBtn">
-  <img src="/files/mute.png" alt="Mute/Unmute" id="soundIcon">
-</div>
-
-<!-- Object-fit toggle button -->
-<div class="fit-btn" id="fitBtn">Fit</div>
-
-  <div id="video-container"></div>
-
-  <script>
-
 const videoContainer = document.getElementById('video-container');
 const soundBtn = document.getElementById('soundBtn');
 const soundIcon = document.getElementById('soundIcon');
@@ -31,8 +7,8 @@ let videosData = [];
 let videoOrder = [];
 let current = 0;
 let infoTimeout;
-let isMuted = true; // default muted
-let isContain = true; // default fit mode
+let isMuted = true;  // default mute
+let isContain = true; // default object-fit
 
 // Load videos from JSON
 fetch('/files/videos.json')
@@ -53,7 +29,7 @@ function shuffleVideos() {
   }
 }
 
-// Create empty video wrappers (lazy load later)
+// Create empty wrappers (lazy load later)
 function createVideos() {
   videoOrder.forEach((videoIndex) => {
     const video = videosData[videoIndex];
@@ -94,7 +70,7 @@ function createVideos() {
     wrapper.appendChild(info);
     videoContainer.appendChild(wrapper);
 
-    // Progress bar update
+    // Update progress bar
     vid.addEventListener('timeupdate', () => {
       if (vid.duration) {
         const progress = (vid.currentTime / vid.duration) * 100;
@@ -102,12 +78,12 @@ function createVideos() {
       }
     });
 
-    // Auto next when ended
+    // Go next when video ends
     vid.addEventListener('ended', () => nextVideo());
   });
 }
 
-// Show video info overlay temporarily
+// Show info overlay temporarily
 function showInfo(info) {
   info.classList.add('show');
   clearTimeout(infoTimeout);
@@ -132,12 +108,13 @@ function loadVideo(index) {
 // Show a video by index
 function showVideo(index) {
   const wrappers = document.querySelectorAll('.video-wrapper');
+
   wrappers.forEach((w, i) => {
     w.style.transform = `translateY(${(i - index) * 100}%)`;
     const videoEl = w.querySelector('video');
 
     if (i === index) {
-      loadVideo(i);
+      loadVideo(i); // load current
       videoEl.muted = isMuted;
       videoEl.style.objectFit = isContain ? 'contain' : 'cover';
       videoEl.play();
@@ -146,12 +123,11 @@ function showVideo(index) {
     }
   });
 
-  // Preload neighbors
+  // ✅ Only preload next video
   loadVideo(index + 1);
-  loadVideo(index - 1);
 }
 
-// Next/previous video
+// Next/previous
 function nextVideo() {
   current = (current + 1) % videoOrder.length;
   showVideo(current);
@@ -161,7 +137,7 @@ function prevVideo() {
   showVideo(current);
 }
 
-// Toggle mute for all videos
+// Toggle mute (applies to all videos)
 function toggleMute() {
   isMuted = !isMuted;
   const wrappers = document.querySelectorAll('.video-wrapper');
@@ -212,7 +188,7 @@ document.addEventListener('touchend', e => {
   else showVideo(current);
 }, { passive: false });
 
-// Keyboard support
+// Keyboard navigation
 document.addEventListener('keydown', e => {
   if (e.key === 'ArrowUp') prevVideo();
   else if (e.key === 'ArrowDown') nextVideo();
@@ -232,8 +208,3 @@ document.addEventListener('touchmove', function(e) {
     e.preventDefault();
   }
 }, { passive: false });
-
-
-</script>
-</body>
-</html>
