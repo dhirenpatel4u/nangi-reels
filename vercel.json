@@ -37,14 +37,14 @@
       "src": "/files/style.css",
       "dest": "/files/style.css",
       "headers": {
-        "Cache-Control": "max-age=20, public"
+        "Cache-Control": "max-age=20000, public"
       }
     },
     {
       "src": "/files/videos.json",
       "dest": "/files/videos.json",
       "headers": {
-        "Cache-Control": "max-age=20, public"
+        "Cache-Control": "max-age=2000, public"
       }
     },
     {
@@ -64,6 +64,7 @@
   ],
   "regions": ["bom1"]
 }
+
 
 
 
