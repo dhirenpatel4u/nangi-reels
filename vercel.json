@@ -1,0 +1,105 @@
+{
+  "functions": {
+    "api/*.php": {
+      "runtime": "vercel-php@0.7.1"
+    }
+  },
+  "routes": [
+    {
+      "src": "/(.*)\\.mpd",
+      "dest": "/api/index.php?id=$1&$query",
+      "headers": {
+        "Cache-Control": "max-age=20, public"
+      }
+    },
+    {
+      "src": "/(.*)\\.m3u8",
+      "dest": "/api/index.php?id=$1",
+      "headers": {
+        "Cache-Control": "max-age=20, public"
+      }
+    },
+    {
+      "src": "/aiimg/(.*)\\.img",
+      "dest": "/api/aiimg.php?url=$1",
+      "headers": {
+        "Cache-Control": "max-age=20, public"
+      }
+    },
+    {
+      "src": "/",
+      "dest": "/api/welcome.php",
+      "headers": {
+        "Cache-Control": "max-age=84000, public"
+      }
+    },
+    {
+      "src": "/playlist.m3u",
+      "dest": "/api/playlist.php",
+      "headers": {
+        "Cache-Control": "max-age=84000, public"
+      }
+    },
+    {
+      "src": "/index.php",
+      "dest": "/api/index.php",
+      "headers": {
+        "Cache-Control": "max-age=20, public"
+      }
+    },
+    {
+      "src": "/play.php",
+      "dest": "/api/play.php",
+      "headers": {
+        "Cache-Control": "max-age=20, public"
+      }
+    },
+    {
+      "src": "/play-2.php",
+      "dest": "/api/play-2.php",
+      "headers": {
+        "Cache-Control": "max-age=20, public"
+      }
+    },
+    {
+      "src": "/free.php",
+      "dest": "/api/free.php",
+      "headers": {
+        "Cache-Control": "max-age=20, public"
+      }
+    },
+    {
+      "src": "/db.php",
+      "dest": "/api/db.php",
+      "headers": {
+        "Cache-Control": "max-age=20, public"
+      }
+    },
+    {
+      "src": "/home.php",
+      "dest": "/api/home.php",
+      "headers": {
+        "Cache-Control": "max-age=20, public"
+      }
+    },
+    {
+      "src": "/video.php",
+      "dest": "/api/video.php",
+      "headers": {
+        "Cache-Control": "max-age=20, public"
+      }
+    },
+    {
+      "src": "/tv.php",
+      "dest": "/api/tv.php",
+      "headers": {
+        "Cache-Control": "max-age=20, public"
+      }
+    }
+  ],
+  "regions": ["bom1"]
+}
+
+
+
+
