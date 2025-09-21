@@ -1,3 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0" />
+  <title>Video Reels</title>
+  <link rel="stylesheet" href="/files/style.css">
+</head>
+<body>
+  <div class="logo">
+    <img src="/files/your-logo.png" alt="Logo">
+  </div>
+
+<div class="sound-btn" id="soundBtn">
+  <img src="/files/mute.png" alt="Mute/Unmute" id="soundIcon">
+</div>
+
+<!-- Object-fit toggle button -->
+<div class="fit-btn" id="fitBtn">Fit</div>
+
+  <div id="video-container"></div>
+
+  <script>
+
 const videoContainer = document.getElementById('video-container');
 const soundBtn = document.getElementById('soundBtn');
 const soundIcon = document.getElementById('soundIcon');
@@ -11,7 +35,7 @@ let isMuted = true;  // default mute
 let isContain = true; // default object-fit
 
 // Load videos from JSON
-fetch('/files/videos.json')
+fetch('videos.json')
   .then(res => res.json())
   .then(data => {
     videosData = data;
@@ -144,7 +168,7 @@ function toggleMute() {
   wrappers.forEach(w => {
     w.querySelector('video').muted = isMuted;
   });
-  soundIcon.src = isMuted ? '/files/mute.png' : '/files/unmute.png';
+  soundIcon.src = isMuted ? 'mute.png' : 'unmute.png';
 }
 soundBtn.addEventListener('click', toggleMute);
 
@@ -208,3 +232,8 @@ document.addEventListener('touchmove', function(e) {
     e.preventDefault();
   }
 }, { passive: false });
+
+
+</script>
+</body>
+</html>
