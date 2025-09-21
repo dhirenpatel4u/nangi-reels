@@ -7,6 +7,9 @@
   <link rel="stylesheet" href="/files/style.css">
 </head>
 <body>
+  <div class="logo">
+    <img src="/files/your-logo.png" alt="Logo">
+  </div>
   <div id="video-container"></div>
 
   <!-- Top Controls -->
