@@ -34,15 +34,15 @@
       }
     },
     {
-      "src": "/style.css",
-      "dest": "/api/style.css",
+      "src": "/files/style.css",
+      "dest": "/files/style.css",
       "headers": {
         "Cache-Control": "max-age=20, public"
       }
     },
     {
-      "src": "/videos.json",
-      "dest": "/api/videos.json",
+      "src": "/files/videos.json",
+      "dest": "/files/videos.json",
       "headers": {
         "Cache-Control": "max-age=20, public"
       }
@@ -55,15 +55,16 @@
       }
     },
     {
-      "src": "/(.*)\\.png",
-      "dest": "/api/$1.png",
+      "src": "/files/(.*)\\.png",
+      "dest": "/files/$1.png",
       "headers": {
         "Cache-Control": "max-age=20000, public"
       }
-    }
+    },
   ],
   "regions": ["bom1"]
 }
+
 
 
 
