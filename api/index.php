@@ -11,9 +11,9 @@
 
   <!-- Top Controls -->
   <div id="top-controls">
-    <button id="soundBtn"><img id="soundIcon" src="mute.png" alt="Sound"></button>
+    <button id="soundBtn"><img id="soundIcon" src="/files/mute.png" alt="Sound"></button>
     <button id="fitBtn">Fit</button>
-    <button id="fullscreenBtn"><img src="fullscreen-logo.png" alt="Fullscreen"></button>
+    <button id="fullscreenBtn"><img src="/files/fullscreen-logo.png" alt="Fullscreen"></button>
   </div>
 
   <script>
