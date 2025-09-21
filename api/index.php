@@ -25,33 +25,35 @@
 const videoContainer = document.getElementById('video-container');
 const soundBtn = document.getElementById('soundBtn');
 const soundIcon = document.getElementById('soundIcon');
+const fitBtn = document.getElementById('fitBtn');
 
 let videosData = [];
 let videoOrder = [];
 let current = 0;
 let infoTimeout;
-let isMuted = true; // initial state
+let isMuted = true; // default muted
+let isContain = true; // default fit mode
 
 // Load videos from JSON
 fetch('/files/videos.json')
   .then(res => res.json())
   .then(data => {
     videosData = data;
-    shuffleVideos();   // shuffle the video order
+    shuffleVideos();
     createVideos();
     showVideo(current);
   });
 
-// Shuffle function
+// Shuffle video order
 function shuffleVideos() {
-  videoOrder = [...Array(videosData.length).keys()]; // [0,1,2,...]
+  videoOrder = [...Array(videosData.length).keys()];
   for (let i = videoOrder.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [videoOrder[i], videoOrder[j]] = [videoOrder[j], videoOrder[i]];
   }
 }
 
-// Create video elements
+// Create empty video wrappers (lazy load later)
 function createVideos() {
   videoOrder.forEach((videoIndex) => {
     const video = videosData[videoIndex];
@@ -60,11 +62,12 @@ function createVideos() {
     wrapper.classList.add('video-wrapper');
 
     const vid = document.createElement('video');
-    vid.src = video.src;
     vid.muted = isMuted;
     vid.loop = false;
     vid.playsInline = true;
     vid.autoplay = true;
+    vid.setAttribute('preload', 'none');
+    vid.style.objectFit = isContain ? 'contain' : 'cover';
 
     const info = document.createElement('div');
     info.classList.add('video-info');
@@ -75,8 +78,9 @@ function createVideos() {
       </div>
     `;
 
-    // Click progress bar to seek
+    // Progress bar click → seek
     info.querySelector('.progress-bar-container').addEventListener('click', e => {
+      if (!vid.duration) return;
       const rect = e.currentTarget.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
       const percentage = clickX / rect.width;
@@ -90,18 +94,20 @@ function createVideos() {
     wrapper.appendChild(info);
     videoContainer.appendChild(wrapper);
 
-    // Update progress bar
+    // Progress bar update
     vid.addEventListener('timeupdate', () => {
-      const progress = (vid.currentTime / vid.duration) * 100;
-      info.querySelector('.progress-bar').style.width = progress + '%';
+      if (vid.duration) {
+        const progress = (vid.currentTime / vid.duration) * 100;
+        info.querySelector('.progress-bar').style.width = progress + '%';
+      }
     });
 
-    // Move to next video when ended
+    // Auto next when ended
     vid.addEventListener('ended', () => nextVideo());
   });
 }
 
-// Show info overlay temporarily
+// Show video info overlay temporarily
 function showInfo(info) {
   info.classList.add('show');
   clearTimeout(infoTimeout);
@@ -110,23 +116,52 @@ function showInfo(info) {
   }, 5000);
 }
 
-// Display a video by index
+// Load video src when needed
+function loadVideo(index) {
+  const wrappers = document.querySelectorAll('.video-wrapper');
+  if (index < 0 || index >= wrappers.length) return;
+
+  const videoEl = wrappers[index].querySelector('video');
+  const data = videosData[videoOrder[index]];
+
+  if (!videoEl.src) {
+    videoEl.src = data.src;
+  }
+}
+
+// Show a video by index
 function showVideo(index) {
   const wrappers = document.querySelectorAll('.video-wrapper');
   wrappers.forEach((w, i) => {
     w.style.transform = `translateY(${(i - index) * 100}%)`;
     const videoEl = w.querySelector('video');
-    videoEl.muted = isMuted; // apply mute state to all videos
-    if (i === index) videoEl.play();
-    else {
+
+    if (i === index) {
+      loadVideo(i);
+      videoEl.muted = isMuted;
+      videoEl.style.objectFit = isContain ? 'contain' : 'cover';
+      videoEl.play();
+    } else {
       videoEl.pause();
-      videoEl.currentTime = 0;
     }
-    w.querySelector('.video-info').classList.remove('show');
   });
+
+  // Preload neighbors
+  loadVideo(index + 1);
+  loadVideo(index - 1);
 }
 
-// Toggle mute/unmute for all videos
+// Next/previous video
+function nextVideo() {
+  current = (current + 1) % videoOrder.length;
+  showVideo(current);
+}
+function prevVideo() {
+  current = (current - 1 + videoOrder.length) % videoOrder.length;
+  showVideo(current);
+}
+
+// Toggle mute for all videos
 function toggleMute() {
   isMuted = !isMuted;
   const wrappers = document.querySelectorAll('.video-wrapper');
@@ -135,17 +170,28 @@ function toggleMute() {
   });
   soundIcon.src = isMuted ? '/files/mute.png' : '/files/unmute.png';
 }
-
 soundBtn.addEventListener('click', toggleMute);
 
-// Swipe support
+// Toggle object-fit
+fitBtn.addEventListener('click', () => {
+  isContain = !isContain;
+  const wrappers = document.querySelectorAll('.video-wrapper');
+  wrappers.forEach(w => {
+    const video = w.querySelector('video');
+    video.style.objectFit = isContain ? 'contain' : 'cover';
+  });
+  fitBtn.textContent = isContain ? 'Fit' : 'Fill';
+});
+
+// Swipe handling
 let startY = 0;
 let isSwiping = false;
 
 document.addEventListener('touchstart', e => {
+  if (e.touches.length !== 1) return;
   startY = e.touches[0].clientY;
   isSwiping = true;
-});
+}, { passive: false });
 
 document.addEventListener('touchmove', e => {
   if (!isSwiping) return;
@@ -155,7 +201,7 @@ document.addEventListener('touchmove', e => {
   wrappers.forEach((w, i) => {
     w.style.transform = `translateY(${(i - current) * 100 + deltaY / window.innerHeight * 100}%)`;
   });
-});
+}, { passive: false });
 
 document.addEventListener('touchend', e => {
   isSwiping = false;
@@ -163,60 +209,30 @@ document.addEventListener('touchend', e => {
   const deltaY = startY - endY;
   if (deltaY > 50) nextVideo();
   else if (deltaY < -50) prevVideo();
-  else showVideo(current); // snap back
-});
+  else showVideo(current);
+}, { passive: false });
 
-// Desktop keys
+// Keyboard support
 document.addEventListener('keydown', e => {
   if (e.key === 'ArrowUp') prevVideo();
   else if (e.key === 'ArrowDown') nextVideo();
 });
 
-// Go to next video
-function nextVideo() {
-  current = (current + 1) % videoOrder.length;
-  showVideo(current);
-}
-
-// Go to previous video
-function prevVideo() {
-  current = (current - 1 + videoOrder.length) % videoOrder.length;
-  showVideo(current);
-}
-
-// Video Fit & Fill
-
-const fitBtn = document.getElementById('fitBtn');
-let isContain = true; // default mode
-
-fitBtn.addEventListener('click', () => {
-  const wrappers = document.querySelectorAll('.video-wrapper');
-  wrappers.forEach(w => {
-    const video = w.querySelector('video');
-    video.style.objectFit = isContain ? 'cover' : 'contain';
-  });
-  isContain = !isContain;
-  fitBtn.textContent = isContain ? 'Fit' : 'Fill'; // update button text
-});
-
-// Disable Pull-to-Refresh
-
+// Disable pull-to-refresh
 let touchStartY = 0;
-
 document.addEventListener('touchstart', function(e) {
-  if (e.touches.length !== 1) return; // only single touch
+  if (e.touches.length !== 1) return;
   touchStartY = e.touches[0].clientY;
 }, { passive: false });
 
 document.addEventListener('touchmove', function(e) {
   const touchCurrentY = e.touches[0].clientY;
   const scrollTop = window.scrollY || document.documentElement.scrollTop;
-
-  // Prevent pull-to-refresh only when at top and swiping down
   if (scrollTop === 0 && touchCurrentY > touchStartY) {
-    e.preventDefault(); // disable pull-to-refresh
+    e.preventDefault();
   }
 }, { passive: false });
+
 
 </script>
 </body>
