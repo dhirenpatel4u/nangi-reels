@@ -82,6 +82,13 @@ video {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  color: #fff;       /* <-- set text color to white */
+  font-size: 14px;   /* adjust size if needed */
+  font-weight: bold;
+}
+
+#top-controls button:hover {
+  background: rgba(255,255,255,0.2); /* subtle hover effect */
 }
 
 #top-controls button img {
