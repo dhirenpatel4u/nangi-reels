@@ -35,7 +35,7 @@ let isMuted = true;  // default mute
 let isContain = true; // default object-fit
 
 // Load videos from JSON
-fetch('videos.json')
+fetch('/files/videos.json')
   .then(res => res.json())
   .then(data => {
     videosData = data;
@@ -168,7 +168,7 @@ function toggleMute() {
   wrappers.forEach(w => {
     w.querySelector('video').muted = isMuted;
   });
-  soundIcon.src = isMuted ? 'mute.png' : 'unmute.png';
+  soundIcon.src = isMuted ? '/files/mute.png' : '/files/unmute.png';
 }
 soundBtn.addEventListener('click', toggleMute);
 
