@@ -61,7 +61,7 @@ video {
 .progress-bar-container {
   margin-top: 5px;
   width: 90vw;
-  height: 3px;
+  height: 5px;
   background: rgba(255, 255, 255, 0.3);
   position: relative;
   cursor: pointer;
@@ -69,7 +69,7 @@ video {
 
 .progress-bar {
   height: 100%;
-  background: #fff;
+  background: red;          /* red progress white #fff */
   width: 0;
 }
 
