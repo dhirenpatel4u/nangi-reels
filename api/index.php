@@ -132,12 +132,14 @@ function loadVideo(index) {
   }
 }
 
-function showVideo(index) {
+function showVideo(index, withTransition = true) {
   const wrappers = document.querySelectorAll('.video-wrapper');
 
   wrappers.forEach((wrapper, i) => {
     const vid = wrapper.querySelector('video');
-    wrapper.style.transition = "transform 0.3s ease-in-out";
+    wrapper.style.transition = withTransition
+      ? "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)"
+      : "none";
     wrapper.style.transform = `translateY(${(i - index) * 100}%)`;
 
     if (i === index) {
@@ -158,12 +160,12 @@ function showVideo(index) {
 
 function nextVideo() {
   current = (current + 1) % videoOrder.length;
-  showVideo(current);
+  showVideo(current, true);
 }
 
 function prevVideo() {
   current = (current - 1 + videoOrder.length) % videoOrder.length;
-  showVideo(current);
+  showVideo(current, true);
 }
 
 // Controls
@@ -235,8 +237,9 @@ modeBtn.addEventListener('click', () => {
   loadVideos(currentJson);
 });
 
-// Optimized swipe
+// Swipe handling
 let startY = 0, isSwiping = false;
+
 document.addEventListener('touchstart', e => {
   if (e.touches.length !== 1) return;
   startY = e.touches[0].clientY;
@@ -245,7 +248,7 @@ document.addEventListener('touchstart', e => {
   const wrappers = document.querySelectorAll('.video-wrapper');
   [current - 1, current, current + 1].forEach(i => {
     if (i >= 0 && i < wrappers.length) {
-      wrappers[i].style.transition = "none";
+      wrappers[i].style.transition = "none"; // disable transition while dragging
     }
   });
 }, { passive: false });
@@ -272,9 +275,10 @@ document.addEventListener('touchend', e => {
 
   if (deltaY > 50) nextVideo();
   else if (deltaY < -50) prevVideo();
-  else showVideo(current);
+  else showVideo(current, true); // snap back smoothly
 }, { passive: false });
 
+// Keyboard support
 document.addEventListener('keydown', e => {
   if (e.key === 'ArrowUp') prevVideo();
   else if (e.key === 'ArrowDown') nextVideo();
