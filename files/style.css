@@ -76,7 +76,7 @@ video {
 /* Controls */
 #top-controls {
   position: absolute;
-  top: 15px;
+  bottom: 50px;
   right: 15px;
   display: flex;
   flex-direction: column;
