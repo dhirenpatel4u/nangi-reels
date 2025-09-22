@@ -18,7 +18,7 @@
     <button id="fitBtn">Fit</button>
     <button id="fullscreenBtn"><img src="/files/fullscreen-logo.png" alt="Fullscreen"></button>
     <button id="downloadBtn"><img src="/files/download.png" alt="Download"></button>
-    <button id="shareBtn"><img src="/files/share.png" alt="Share"></button>
+    <button id="shareBtn" style="display: none;"><img src="/files/share.png" alt="Share"></button>
     <button id="modeBtn">Reels</button> <!-- Mode toggle button -->
   </div>
 
