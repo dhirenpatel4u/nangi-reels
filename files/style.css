@@ -22,7 +22,11 @@ body, html {
   position: absolute;
   top: 0;
   left: 0;
-  will-change: transform;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  transition: transform 0.4s ease;
+  overflow: hidden;
 }
 
 video {
