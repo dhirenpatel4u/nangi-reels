@@ -39,7 +39,7 @@ let current = 0;
 let infoTimeout;
 let isMuted = true;
 let isContain = true;
-let currentJson = 'videos.json'; // default JSON
+let currentJson = '/files/videos.json'; // default JSON
 
 // Load videos from JSON
 function loadVideos(jsonFile) {
@@ -180,7 +180,7 @@ function prevVideo() {
 soundBtn.addEventListener('click', () => {
   isMuted = !isMuted;
   document.querySelectorAll('.video-wrapper video').forEach(v => v.muted = isMuted);
-  soundIcon.src = isMuted ? 'mute.png' : 'unmute.png';
+  soundIcon.src = isMuted ? '/files/mute.png' : '/files/unmute.png';
 });
 
 // Fit/Fill toggle
@@ -246,10 +246,10 @@ shareBtn.addEventListener('click', async () => {
 modeBtn.addEventListener('click', () => {
   if (modeBtn.textContent === 'Reels') {
     modeBtn.textContent = 'MMS';
-    currentJson = 'mms_videos.json';
+    currentJson = '/files/videos.json';
   } else {
     modeBtn.textContent = 'Reels';
-    currentJson = 'videos.json';
+    currentJson = '/files/videos.json';
   }
   loadVideos(currentJson);
 });
