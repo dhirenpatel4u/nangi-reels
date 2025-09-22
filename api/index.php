@@ -39,7 +39,7 @@ let current = 0;
 let infoTimeout;
 let isMuted = true;
 let isContain = true;
-let currentJson = '/files/videos.json'; // default JSON
+let currentJson = '/files/videos.json';
 
 // Load videos from JSON
 function loadVideos(jsonFile) {
@@ -55,10 +55,8 @@ function loadVideos(jsonFile) {
     });
 }
 
-// Initialize
 loadVideos(currentJson);
 
-// Shuffle video order
 function shuffleVideos() {
   videoOrder = [...Array(videosData.length).keys()];
   for (let i = videoOrder.length - 1; i > 0; i--) {
@@ -67,7 +65,6 @@ function shuffleVideos() {
   }
 }
 
-// Create video elements
 function createVideos() {
   videoOrder.forEach(videoIndex => {
     const video = videosData[videoIndex];
@@ -82,7 +79,6 @@ function createVideos() {
     vid.setAttribute('preload', 'none');
     vid.style.objectFit = isContain ? 'contain' : 'cover';
 
-    // Video info overlay
     const info = document.createElement('div');
     info.classList.add('video-info');
     info.innerHTML = `
@@ -92,10 +88,8 @@ function createVideos() {
       </div>
     `;
 
-    // Click to show info overlay
     vid.addEventListener('click', () => showInfo(info));
 
-    // Progress bar seek
     info.querySelector('.progress-bar-container').addEventListener('click', e => {
       if (!vid.duration) return;
       const rect = e.currentTarget.getBoundingClientRect();
@@ -104,7 +98,6 @@ function createVideos() {
       vid.currentTime = percentage * vid.duration;
     });
 
-    // Update progress bar
     vid.addEventListener('timeupdate', () => {
       if (vid.duration) {
         const progress = (vid.currentTime / vid.duration) * 100;
@@ -120,14 +113,12 @@ function createVideos() {
   });
 }
 
-// Show info overlay
 function showInfo(info) {
   info.classList.add('show');
   clearTimeout(infoTimeout);
   infoTimeout = setTimeout(() => info.classList.remove('show'), 5000);
 }
 
-// Load video source
 function loadVideo(index) {
   const wrappers = document.querySelectorAll('.video-wrapper');
   if (index < 0 || index >= wrappers.length) return;
@@ -141,13 +132,12 @@ function loadVideo(index) {
   }
 }
 
-// Show current video and preload next
 function showVideo(index) {
   const wrappers = document.querySelectorAll('.video-wrapper');
 
   wrappers.forEach((wrapper, i) => {
     const vid = wrapper.querySelector('video');
-    wrapper.style.transition = "transform 0.4s ease-in-out"; // smooth animation
+    wrapper.style.transition = "transform 0.3s ease-in-out";
     wrapper.style.transform = `translateY(${(i - index) * 100}%)`;
 
     if (i === index) {
@@ -166,7 +156,6 @@ function showVideo(index) {
   });
 }
 
-// Navigate videos
 function nextVideo() {
   current = (current + 1) % videoOrder.length;
   showVideo(current);
@@ -177,14 +166,13 @@ function prevVideo() {
   showVideo(current);
 }
 
-// Mute/unmute
+// Controls
 soundBtn.addEventListener('click', () => {
   isMuted = !isMuted;
   document.querySelectorAll('.video-wrapper video').forEach(v => v.muted = isMuted);
   soundIcon.src = isMuted ? '/files/mute.png' : '/files/unmute.png';
 });
 
-// Fit/Fill toggle
 fitBtn.addEventListener('click', () => {
   isContain = !isContain;
   document.querySelectorAll('.video-wrapper video').forEach(v => {
@@ -193,7 +181,6 @@ fitBtn.addEventListener('click', () => {
   fitBtn.textContent = isContain ? 'Fit' : 'Fill';
 });
 
-// Fullscreen
 fullscreenBtn.addEventListener('click', () => {
   const vid = document.querySelectorAll('.video-wrapper')[current].querySelector('video');
 
@@ -212,38 +199,31 @@ fullscreenBtn.addEventListener('click', () => {
   else vid.addEventListener('loadedmetadata', setOrientation, { once: true });
 });
 
-// Download current video
 downloadBtn.addEventListener('click', () => {
   const vid = document.querySelectorAll('.video-wrapper')[current].querySelector('video');
-  const src = vid.src;
-  if (!src) return alert("Video not loaded yet.");
-
+  if (!vid.src) return alert("Video not loaded yet.");
   const a = document.createElement('a');
-  a.href = src;
+  a.href = vid.src;
   a.download = `video-${current + 1}.mp4`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
 });
 
-// Share current video
 shareBtn.addEventListener('click', async () => {
   const vid = document.querySelectorAll('.video-wrapper')[current].querySelector('video');
-  const src = vid.src;
-  if (!src) return alert("Video not loaded yet.");
-
+  if (!vid.src) return alert("Video not loaded yet.");
   if (navigator.share) {
     try {
-      await navigator.share({ title: 'Check out this video', url: src });
+      await navigator.share({ title: 'Check out this video', url: vid.src });
     } catch (err) {
       console.error("Share canceled or failed", err);
     }
   } else {
-    alert(`Share this video manually: ${src}`);
+    alert(`Share manually: ${vid.src}`);
   }
 });
 
-// Mode toggle button (Reels / MMS)
 modeBtn.addEventListener('click', () => {
   if (modeBtn.textContent === 'Reels') {
     modeBtn.textContent = 'MMS';
@@ -255,12 +235,19 @@ modeBtn.addEventListener('click', () => {
   loadVideos(currentJson);
 });
 
-// Swipe handling with smooth animation
+// Optimized swipe
 let startY = 0, isSwiping = false;
 document.addEventListener('touchstart', e => {
   if (e.touches.length !== 1) return;
   startY = e.touches[0].clientY;
   isSwiping = true;
+
+  const wrappers = document.querySelectorAll('.video-wrapper');
+  [current - 1, current, current + 1].forEach(i => {
+    if (i >= 0 && i < wrappers.length) {
+      wrappers[i].style.transition = "none";
+    }
+  });
 }, { passive: false });
 
 document.addEventListener('touchmove', e => {
@@ -268,27 +255,26 @@ document.addEventListener('touchmove', e => {
   const moveY = e.touches[0].clientY;
   const deltaY = moveY - startY;
 
-  document.querySelectorAll('.video-wrapper').forEach((w, i) => {
-    w.style.transition = "none"; // disable animation while dragging
-    w.style.transform = `translateY(${(i - current) * 100 + deltaY / window.innerHeight * 100}%)`;
+  const wrappers = document.querySelectorAll('.video-wrapper');
+  [current - 1, current, current + 1].forEach(i => {
+    if (i >= 0 && i < wrappers.length) {
+      wrappers[i].style.transform = `translateY(${(i - current) * 100 + deltaY / window.innerHeight * 100}%)`;
+    }
   });
 }, { passive: false });
 
 document.addEventListener('touchend', e => {
+  if (!isSwiping) return;
   isSwiping = false;
+
   const endY = e.changedTouches[0].clientY;
   const deltaY = startY - endY;
-
-  document.querySelectorAll('.video-wrapper').forEach(w => {
-    w.style.transition = "transform 0.4s ease-in-out"; // re-enable animation
-  });
 
   if (deltaY > 50) nextVideo();
   else if (deltaY < -50) prevVideo();
   else showVideo(current);
 }, { passive: false });
 
-// Keyboard navigation
 document.addEventListener('keydown', e => {
   if (e.key === 'ArrowUp') prevVideo();
   else if (e.key === 'ArrowDown') nextVideo();
@@ -299,13 +285,11 @@ let touchStartY = 0;
 document.addEventListener('touchstart', e => { 
   if (e.touches.length === 1) touchStartY = e.touches[0].clientY; 
 }, { passive:false });
-
 document.addEventListener('touchmove', e => {
   const touchCurrentY = e.touches[0].clientY;
   const scrollTop = window.scrollY || document.documentElement.scrollTop;
   if(scrollTop === 0 && touchCurrentY > touchStartY) e.preventDefault();
 }, { passive:false });
-
 
 
 </script>
