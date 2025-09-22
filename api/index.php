@@ -19,6 +19,7 @@
     <button id="fullscreenBtn"><img src="/files/fullscreen-logo.png" alt="Fullscreen"></button>
     <button id="downloadBtn"><img src="/files/download.png" alt="Download"></button>
     <button id="shareBtn"><img src="/files/share.png" alt="Share"></button>
+    <button id="modeBtn">Reels</button> <!-- Mode toggle button -->
   </div>
 
   <script>
@@ -30,6 +31,7 @@ const fitBtn = document.getElementById('fitBtn');
 const fullscreenBtn = document.getElementById('fullscreenBtn');
 const downloadBtn = document.getElementById('downloadBtn');
 const shareBtn = document.getElementById('shareBtn');
+const modeBtn = document.getElementById('modeBtn');
 
 let videosData = [];
 let videoOrder = [];
@@ -37,18 +39,26 @@ let current = 0;
 let infoTimeout;
 let isMuted = true;
 let isContain = true;
+let currentJson = 'videos.json'; // default JSON
 
 // Load videos from JSON
-fetch('files/videos.json')
-  .then(res => res.json())
-  .then(data => {
-    videosData = data;
-    shuffleVideos();
-    createVideos();
-    showVideo(current);
-  });
+function loadVideos(jsonFile) {
+  fetch(jsonFile)
+    .then(res => res.json())
+    .then(data => {
+      videosData = data;
+      shuffleVideos();
+      videoContainer.innerHTML = '';
+      current = 0;
+      createVideos();
+      showVideo(current);
+    });
+}
 
-// Shuffle order
+// Initialize
+loadVideos(currentJson);
+
+// Shuffle video order
 function shuffleVideos() {
   videoOrder = [...Array(videosData.length).keys()];
   for (let i = videoOrder.length - 1; i > 0; i--) {
@@ -59,7 +69,7 @@ function shuffleVideos() {
 
 // Create video elements
 function createVideos() {
-  videoOrder.forEach((videoIndex) => {
+  videoOrder.forEach(videoIndex => {
     const video = videosData[videoIndex];
 
     const wrapper = document.createElement('div');
@@ -72,7 +82,7 @@ function createVideos() {
     vid.setAttribute('preload', 'none');
     vid.style.objectFit = isContain ? 'contain' : 'cover';
 
-    // Video info
+    // Video info overlay
     const info = document.createElement('div');
     info.classList.add('video-info');
     info.innerHTML = `
@@ -81,6 +91,9 @@ function createVideos() {
         <div class="progress-bar"></div>
       </div>
     `;
+
+    // Click to show info overlay
+    vid.addEventListener('click', () => showInfo(info));
 
     // Progress bar seek
     info.querySelector('.progress-bar-container').addEventListener('click', e => {
@@ -91,17 +104,7 @@ function createVideos() {
       vid.currentTime = percentage * vid.duration;
     });
 
-    // Show overlay on tap
-    vid.addEventListener('click', () => showInfo(info));
-
-    // Error handling
-    vid.addEventListener('error', () => handleVideoError(vid, video));
-
-    wrapper.appendChild(vid);
-    wrapper.appendChild(info);
-    videoContainer.appendChild(wrapper);
-
-    // Progress bar update
+    // Update progress bar
     vid.addEventListener('timeupdate', () => {
       if (vid.duration) {
         const progress = (vid.currentTime / vid.duration) * 100;
@@ -110,6 +113,10 @@ function createVideos() {
     });
 
     vid.addEventListener('ended', () => nextVideo());
+
+    wrapper.appendChild(vid);
+    wrapper.appendChild(info);
+    videoContainer.appendChild(wrapper);
   });
 }
 
@@ -117,26 +124,7 @@ function createVideos() {
 function showInfo(info) {
   info.classList.add('show');
   clearTimeout(infoTimeout);
-  infoTimeout = setTimeout(() => {
-    info.classList.remove('show');
-  }, 5000);
-}
-
-// Handle invalid/unplayable video
-function handleVideoError(vid, videoData) {
-  console.warn(`Video might be invalid: ${videoData.src}`);
-
-  // Give the video a chance to recover before skipping
-  setTimeout(() => {
-    if (vid.readyState < 3 || vid.currentTime === 0) {
-      console.warn(`Confirmed invalid video: ${videoData.src}, skipping...`);
-      vid.removeAttribute('src');
-      vid.load();
-      nextVideo();
-    } else {
-      console.log(`Video recovered: ${videoData.src}`);
-    }
-  }, 3000); // wait 3 seconds
+  infoTimeout = setTimeout(() => info.classList.remove('show'), 5000);
 }
 
 // Load video source
@@ -144,58 +132,58 @@ function loadVideo(index) {
   const wrappers = document.querySelectorAll('.video-wrapper');
   if (index < 0 || index >= wrappers.length) return;
 
-  const videoEl = wrappers[index].querySelector('video');
+  const vid = wrappers[index].querySelector('video');
   const data = videosData[videoOrder[index]];
 
-  if (!videoEl.src) {
-    videoEl.src = data.src;
-    videoEl.load();
+  if (!vid.src) {
+    vid.src = data.src;
+    vid.load();
   }
 }
 
-// Show current video
+// Show current video and preload next
 function showVideo(index) {
   const wrappers = document.querySelectorAll('.video-wrapper');
 
-  wrappers.forEach((w, i) => {
-    const videoEl = w.querySelector('video');
-    w.style.transform = `translateY(${(i - index) * 100}%)`;
+  wrappers.forEach((wrapper, i) => {
+    const vid = wrapper.querySelector('video');
+    wrapper.style.transform = `translateY(${(i - index) * 100}%)`;
 
     if (i === index) {
       loadVideo(i);
-      videoEl.muted = isMuted;
-      videoEl.style.objectFit = isContain ? 'contain' : 'cover';
-      videoEl.play().catch(() => {});
+      vid.muted = isMuted;
+      vid.style.objectFit = isContain ? 'contain' : 'cover';
+      vid.play().catch(() => {});
     } else if (i === index + 1) {
       loadVideo(i);
-      videoEl.pause();
+      vid.pause();
     } else {
-      videoEl.pause();
-      videoEl.removeAttribute('src');
-      videoEl.load();
+      vid.pause();
+      vid.removeAttribute('src');
+      vid.load();
     }
   });
 }
 
-// Next/previous video
+// Navigate videos
 function nextVideo() {
   current = (current + 1) % videoOrder.length;
   showVideo(current);
 }
+
 function prevVideo() {
   current = (current - 1 + videoOrder.length) % videoOrder.length;
   showVideo(current);
 }
 
 // Mute/unmute
-function toggleMute() {
+soundBtn.addEventListener('click', () => {
   isMuted = !isMuted;
   document.querySelectorAll('.video-wrapper video').forEach(v => v.muted = isMuted);
-  soundIcon.src = isMuted ? '/files/mute.png' : '/files/unmute.png';
-}
-soundBtn.addEventListener('click', toggleMute);
+  soundIcon.src = isMuted ? 'mute.png' : 'unmute.png';
+});
 
-// Fit/fill toggle
+// Fit/Fill toggle
 fitBtn.addEventListener('click', () => {
   isContain = !isContain;
   document.querySelectorAll('.video-wrapper video').forEach(v => {
@@ -206,27 +194,17 @@ fitBtn.addEventListener('click', () => {
 
 // Fullscreen
 fullscreenBtn.addEventListener('click', () => {
-  const wrappers = document.querySelectorAll('.video-wrapper');
-  const vid = wrappers[current].querySelector('video');
+  const vid = document.querySelectorAll('.video-wrapper')[current].querySelector('video');
 
-  if (vid.requestFullscreen) {
-    vid.requestFullscreen();
-  } else if (vid.webkitEnterFullscreen) {
-    vid.webkitEnterFullscreen(); // iOS Safari
-    return;
-  } else if (vid.webkitRequestFullscreen) {
-    vid.webkitRequestFullscreen();
-  } else if (vid.msRequestFullscreen) {
-    vid.msRequestFullscreen();
-  }
+  if (vid.requestFullscreen) vid.requestFullscreen();
+  else if (vid.webkitEnterFullscreen) vid.webkitEnterFullscreen();
+  else if (vid.webkitRequestFullscreen) vid.webkitRequestFullscreen();
+  else if (vid.msRequestFullscreen) vid.msRequestFullscreen();
 
   const setOrientation = () => {
     const aspect = vid.videoWidth / vid.videoHeight;
-    if (aspect > 1) {
-      screen.orientation?.lock('landscape').catch(() => {});
-    } else {
-      screen.orientation?.lock('portrait').catch(() => {});
-    }
+    if (aspect > 1) screen.orientation?.lock('landscape').catch(() => {});
+    else screen.orientation?.lock('portrait').catch(() => {});
   };
 
   if (vid.readyState >= 1) setOrientation();
@@ -235,10 +213,8 @@ fullscreenBtn.addEventListener('click', () => {
 
 // Download current video
 downloadBtn.addEventListener('click', () => {
-  const wrappers = document.querySelectorAll('.video-wrapper');
-  const vid = wrappers[current].querySelector('video');
+  const vid = document.querySelectorAll('.video-wrapper')[current].querySelector('video');
   const src = vid.src;
-
   if (!src) return alert("Video not loaded yet.");
 
   const a = document.createElement('a');
@@ -251,24 +227,31 @@ downloadBtn.addEventListener('click', () => {
 
 // Share current video
 shareBtn.addEventListener('click', async () => {
-  const wrappers = document.querySelectorAll('.video-wrapper');
-  const vid = wrappers[current].querySelector('video');
+  const vid = document.querySelectorAll('.video-wrapper')[current].querySelector('video');
   const src = vid.src;
-
   if (!src) return alert("Video not loaded yet.");
 
   if (navigator.share) {
     try {
-      await navigator.share({
-        title: 'Check out this video',
-        url: src
-      });
+      await navigator.share({ title: 'Check out this video', url: src });
     } catch (err) {
       console.error("Share canceled or failed", err);
     }
   } else {
     alert(`Share this video manually: ${src}`);
   }
+});
+
+// Mode toggle button (Reels / MMS)
+modeBtn.addEventListener('click', () => {
+  if (modeBtn.textContent === 'Reels') {
+    modeBtn.textContent = 'MMS';
+    currentJson = 'mms_videos.json';
+  } else {
+    modeBtn.textContent = 'Reels';
+    currentJson = 'videos.json';
+  }
+  loadVideos(currentJson);
 });
 
 // Swipe handling
