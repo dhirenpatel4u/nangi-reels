@@ -7,6 +7,9 @@
   <link rel="stylesheet" href="/files/style.css">
 </head>
 <body>
+  <div class="logo">
+    <img src="/files/your-logo.png" alt="Logo">
+  </div>
   <div id="video-container"></div>
 
   <!-- Top Controls -->
@@ -14,6 +17,8 @@
     <button id="soundBtn"><img id="soundIcon" src="/files/mute.png" alt="Sound"></button>
     <button id="fitBtn">Fit</button>
     <button id="fullscreenBtn"><img src="/files/fullscreen-logo.png" alt="Fullscreen"></button>
+    <button id="downloadBtn"><img src="/files/download.png" alt="Download"></button>
+    <button id="shareBtn"><img src="/files/share.png" alt="Share"></button>
   </div>
 
   <script>
@@ -23,6 +28,8 @@ const soundBtn = document.getElementById('soundBtn');
 const soundIcon = document.getElementById('soundIcon');
 const fitBtn = document.getElementById('fitBtn');
 const fullscreenBtn = document.getElementById('fullscreenBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const shareBtn = document.getElementById('shareBtn');
 
 let videosData = [];
 let videoOrder = [];
@@ -210,6 +217,44 @@ fullscreenBtn.addEventListener('click', () => {
 
   if (vid.readyState >= 1) setOrientation();
   else vid.addEventListener('loadedmetadata', setOrientation, { once: true });
+});
+
+// Download current video
+downloadBtn.addEventListener('click', () => {
+  const wrappers = document.querySelectorAll('.video-wrapper');
+  const vid = wrappers[current].querySelector('video');
+  const src = vid.src;
+
+  if (!src) return alert("Video not loaded yet.");
+
+  const a = document.createElement('a');
+  a.href = src;
+  a.download = `video-${current + 1}.mp4`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+});
+
+// Share current video
+shareBtn.addEventListener('click', async () => {
+  const wrappers = document.querySelectorAll('.video-wrapper');
+  const vid = wrappers[current].querySelector('video');
+  const src = vid.src;
+
+  if (!src) return alert("Video not loaded yet.");
+
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: 'Check out this video',
+        url: src
+      });
+    } catch (err) {
+      console.error("Share canceled or failed", err);
+    }
+  } else {
+    alert(`Share this video manually: ${src}`);
+  }
 });
 
 // Swipe handling
