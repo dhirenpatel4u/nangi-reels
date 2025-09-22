@@ -147,6 +147,7 @@ function showVideo(index) {
 
   wrappers.forEach((wrapper, i) => {
     const vid = wrapper.querySelector('video');
+    wrapper.style.transition = "transform 0.4s ease-in-out"; // smooth animation
     wrapper.style.transform = `translateY(${(i - index) * 100}%)`;
 
     if (i === index) {
@@ -254,7 +255,7 @@ modeBtn.addEventListener('click', () => {
   loadVideos(currentJson);
 });
 
-// Swipe handling
+// Swipe handling with smooth animation
 let startY = 0, isSwiping = false;
 document.addEventListener('touchstart', e => {
   if (e.touches.length !== 1) return;
@@ -266,7 +267,9 @@ document.addEventListener('touchmove', e => {
   if (!isSwiping) return;
   const moveY = e.touches[0].clientY;
   const deltaY = moveY - startY;
+
   document.querySelectorAll('.video-wrapper').forEach((w, i) => {
+    w.style.transition = "none"; // disable animation while dragging
     w.style.transform = `translateY(${(i - current) * 100 + deltaY / window.innerHeight * 100}%)`;
   });
 }, { passive: false });
@@ -275,6 +278,11 @@ document.addEventListener('touchend', e => {
   isSwiping = false;
   const endY = e.changedTouches[0].clientY;
   const deltaY = startY - endY;
+
+  document.querySelectorAll('.video-wrapper').forEach(w => {
+    w.style.transition = "transform 0.4s ease-in-out"; // re-enable animation
+  });
+
   if (deltaY > 50) nextVideo();
   else if (deltaY < -50) prevVideo();
   else showVideo(current);
