@@ -3,7 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0" />
-  <title>Video Reels</title>
+  <title>Nangi Reels</title>
+  <meta property="og:site_name" content="Nangi Reels">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="description" content="Watch Hot Reels">
+  <meta name="keywords" content="Hot Reels, Nangi Reels, Adult Reels">
+	<meta name="robots" content="index, follow">
+  <meta name="language" content="English">
+  <meta name="author" content="Nangi Reels LLP">
+  <meta property="og:title" content="Nangi Reels">
+  <meta property="og:description" content="Watch Hot Reels">
+  <meta property="og:image" content="/files/your-logo.png">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="/files/your-logo.png" type="image/x-icon">
+  
   <link rel="stylesheet" href="/files/style.css">
 </head>
 <body>
