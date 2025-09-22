@@ -14,7 +14,7 @@
 
   <!-- Top Controls -->
   <div id="top-controls">
-    <button id="soundBtn"><img id="soundIcon" src="/files/mute.png" alt="Sound"></button>
+    <button id="soundBtn"><img id="soundIcon" src="files/mute.png" alt="Sound"></button>
     <button id="fitBtn">Fit</button>
     <button id="fullscreenBtn"><img src="/files/fullscreen-logo.png" alt="Fullscreen"></button>
     <button id="downloadBtn"><img src="/files/download.png" alt="Download"></button>
@@ -39,7 +39,7 @@ let isMuted = true;
 let isContain = true;
 
 // Load videos from JSON
-fetch('/files/videos.json')
+fetch('files/videos.json')
   .then(res => res.json())
   .then(data => {
     videosData = data;
@@ -94,11 +94,8 @@ function createVideos() {
     // Show overlay on tap
     vid.addEventListener('click', () => showInfo(info));
 
-    // Auto-skip invalid video
-    vid.addEventListener('error', () => {
-      console.warn(`Video failed: ${video.src}, skipping...`);
-      nextVideo();
-    });
+    // Error handling
+    vid.addEventListener('error', () => handleVideoError(vid, video));
 
     wrapper.appendChild(vid);
     wrapper.appendChild(info);
@@ -123,6 +120,23 @@ function showInfo(info) {
   infoTimeout = setTimeout(() => {
     info.classList.remove('show');
   }, 5000);
+}
+
+// Handle invalid/unplayable video
+function handleVideoError(vid, videoData) {
+  console.warn(`Video might be invalid: ${videoData.src}`);
+
+  // Give the video a chance to recover before skipping
+  setTimeout(() => {
+    if (vid.readyState < 3 || vid.currentTime === 0) {
+      console.warn(`Confirmed invalid video: ${videoData.src}, skipping...`);
+      vid.removeAttribute('src');
+      vid.load();
+      nextVideo();
+    } else {
+      console.log(`Video recovered: ${videoData.src}`);
+    }
+  }, 3000); // wait 3 seconds
 }
 
 // Load video source
@@ -151,7 +165,7 @@ function showVideo(index) {
       loadVideo(i);
       videoEl.muted = isMuted;
       videoEl.style.objectFit = isContain ? 'contain' : 'cover';
-      videoEl.play();
+      videoEl.play().catch(() => {});
     } else if (i === index + 1) {
       loadVideo(i);
       videoEl.pause();
@@ -300,6 +314,7 @@ document.addEventListener('touchmove', e => {
   const scrollTop = window.scrollY || document.documentElement.scrollTop;
   if(scrollTop === 0 && touchCurrentY > touchStartY) e.preventDefault();
 }, { passive:false });
+
 
 
 </script>
