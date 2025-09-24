@@ -1,10 +1,9 @@
-/* Reset */
+/* General body and layout */
 body, html {
   margin: 0;
   padding: 0;
   height: 100%;
   background: #000;
-  overflow: hidden;
   font-family: Arial, sans-serif;
 }
 
@@ -18,29 +17,36 @@ body, html {
   justify-content: center;
 }
 
-/* Video wrappers */
+/* Video wrapper */
 .video-wrapper {
-  width: 100%;
-  height: 100%;
   position: absolute;
   top: 0;
   left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  transition: transform 0.4s ease;
-  overflow: hidden;
-  opacity: 0; /* Initially hide videos */
+  opacity: 0; /* Hidden until loaded */
+  transition: opacity 0.5s ease-in-out;
 }
 
+/* Video styles */
 video {
   width: 100%;
   height: 100%;
   background: #000;
   object-fit: contain; /* Default fit */
+  opacity: 0;
+  transition: opacity 0.5s ease;
 }
 
-/* Video info */
+/* Show video once loaded */
+.video-wrapper.loaded video {
+  opacity: 1;
+}
+
+/* Video Information */
 .video-info {
   position: absolute;
   bottom: 50px;
@@ -48,7 +54,7 @@ video {
   color: #fff;
   font-size: 16px;
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity 0.3s ease;
 }
 
 .video-info.show {
@@ -75,19 +81,6 @@ video {
   width: 0;
 }
 
-/* Logo */
-.logo {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  z-index: 10;
-}
-
-.logo img {
-  width: 100px;
-  height: auto;
-}
-
 /* Controls */
 #top-controls {
   position: absolute;
@@ -96,7 +89,7 @@ video {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  z-index: 10000; /* make sure it's above videos */
+  z-index: 10000;
 }
 
 #top-controls button {
@@ -115,7 +108,7 @@ video {
 }
 
 #top-controls button:hover {
-  background: rgba(255,255,255,0.2); /* subtle hover effect */
+  background: rgba(255,255,255,0.2);
 }
 
 #top-controls button img {
@@ -124,17 +117,7 @@ video {
   object-fit: contain;
 }
 
-/* Lazy loading styles */
-.video-wrapper.loaded {
-  opacity: 1;
-  transition: opacity 0.5s ease-in-out;
-}
-
-#video-container .video-wrapper:not(.loaded) video {
-  opacity: 0; /* Hide the video until it's loaded */
-}
-
-/* Adjust for different viewports */
+/* Responsive */
 @media (max-width: 768px) {
   .video-title {
     font-size: 14px;
@@ -142,43 +125,5 @@ video {
 
   .progress-bar-container {
     width: 80vw;
-  }
-
-  #top-controls {
-    bottom: 70px;
-  }
-
-  #top-controls button {
-    width: 35px;
-    height: 35px;
-  }
-
-  #top-controls button img {
-    width: 20px;
-    height: 20px;
-  }
-}
-
-@media (max-width: 480px) {
-  .video-title {
-    font-size: 12px;
-  }
-
-  .progress-bar-container {
-    width: 75vw;
-  }
-
-  #top-controls {
-    bottom: 60px;
-  }
-
-  #top-controls button {
-    width: 30px;
-    height: 30px;
-  }
-
-  #top-controls button img {
-    width: 18px;
-    height: 18px;
   }
 }
