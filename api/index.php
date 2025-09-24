@@ -53,24 +53,26 @@ let infoTimeout;
 let isMuted = true;
 let isContain = true;
 let currentJson = '/files/videos.json';
+let loadedVideosCount = 5;  // Initially load only 5 videos
 
-// Load videos from JSON (shuffle only once at page load)
+// Load videos from JSON
 function loadVideos(jsonFile) {
   fetch(jsonFile)
     .then(res => res.json())
     .then(data => {
       videosData = data;
-      shuffleVideos(); // Shuffle only at page load
+      shuffleVideos();
       videoContainer.innerHTML = '';
       current = 0;
-      createVideos();
+      loadedVideosCount = 5; // Reset to 5 on page load
+      createVideos();  // Create only the first 5 videos
       showVideo(current);
     });
 }
 
 loadVideos(currentJson);
 
-// Shuffle function (called once at page load)
+// Shuffle videos order at page load
 function shuffleVideos() {
   videoOrder = [...Array(videosData.length).keys()];
   for (let i = videoOrder.length - 1; i > 0; i--) {
@@ -79,15 +81,11 @@ function shuffleVideos() {
   }
 }
 
-// Create videos within a limited range (current, next 5, and previous 5)
 function createVideos() {
-  const totalVideos = 5;
-  const start = Math.max(0, current - totalVideos);
-  const end = Math.min(videosData.length, current + totalVideos + 1);
-
-  // Create videos within the range of the current, next 5, and previous 5
-  for (let i = start; i < end; i++) {
-    const video = videosData[videoOrder[i]];
+  // Create only the videos that are needed (based on loadedVideosCount)
+  for (let i = 0; i < loadedVideosCount; i++) {
+    const videoIndex = videoOrder[i];
+    const video = videosData[videoIndex];
 
     const wrapper = document.createElement('div');
     wrapper.classList.add('video-wrapper');
@@ -133,7 +131,25 @@ function createVideos() {
   }
 }
 
-// Update video view when the user scrolls/swipes to next/prev
+function showInfo(info) {
+  info.classList.add('show');
+  clearTimeout(infoTimeout);
+  infoTimeout = setTimeout(() => info.classList.remove('show'), 5000);
+}
+
+function loadVideo(index) {
+  const wrappers = document.querySelectorAll('.video-wrapper');
+  if (index < 0 || index >= wrappers.length) return;
+
+  const vid = wrappers[index].querySelector('video');
+  const data = videosData[videoOrder[index]];
+
+  if (!vid.src) {
+    vid.src = data.src;
+    vid.load();
+  }
+}
+
 function showVideo(index, withTransition = true) {
   const wrappers = document.querySelectorAll('.video-wrapper');
 
@@ -160,92 +176,14 @@ function showVideo(index, withTransition = true) {
   });
 }
 
-function loadVideo(index) {
-  const wrappers = document.querySelectorAll('.video-wrapper');
-  if (index < 0 || index >= wrappers.length) return;
-
-  const vid = wrappers[index].querySelector('video');
-  const data = videosData[videoOrder[index]];
-
-  if (!vid.src) {
-    vid.src = data.src;
-    vid.load();
-  }
-}
-
-// Swipe handling
-let startY = 0, isSwiping = false;
-
-document.addEventListener('touchstart', e => {
-  if (e.touches.length !== 1) return;
-  startY = e.touches[0].clientY;
-  isSwiping = true;
-
-  const wrappers = document.querySelectorAll('.video-wrapper');
-  [current - 1, current, current + 1].forEach(i => {
-    if (i >= 0 && i < wrappers.length) {
-      wrappers[i].style.transition = "none"; // disable transition while dragging
-    }
-  });
-}, { passive: false });
-
-document.addEventListener('touchmove', e => {
-  if (!isSwiping) return;
-  const moveY = e.touches[0].clientY;
-  const deltaY = moveY - startY;
-
-  const wrappers = document.querySelectorAll('.video-wrapper');
-  [current - 1, current, current + 1].forEach(i => {
-    if (i >= 0 && i < wrappers.length) {
-      wrappers[i].style.transform = `translateY(${(i - current) * 100 + deltaY / window.innerHeight * 100}%)`;
-    }
-  });
-}, { passive: false });
-
-document.addEventListener('touchend', e => {
-  if (!isSwiping) return;
-  isSwiping = false;
-
-  const endY = e.changedTouches[0].clientY;
-  const deltaY = startY - endY;
-
-  if (deltaY > 50) {
-    nextVideo();
-  } else if (deltaY < -50) {
-    prevVideo();
-  } else {
-    showVideo(current, true); // snap back smoothly
-  }
-}, { passive: false });
-
 function nextVideo() {
   current = (current + 1) % videoOrder.length;
-  adjustVideos('next');
+  showVideo(current, true);
 }
 
 function prevVideo() {
   current = (current - 1 + videoOrder.length) % videoOrder.length;
-  adjustVideos('prev');
-}
-
-// Adjust videos when swipe is detected (add/remove as needed)
-function adjustVideos(direction) {
-  const totalVideos = 5;
-  if (direction === 'next') {
-    // Remove videos from the beginning and add more from the end
-    const newStart = Math.max(0, current - totalVideos);
-    const newEnd = Math.min(videosData.length, current + totalVideos + 1);
-    videoContainer.innerHTML = ''; // clear the container and rebuild videos
-    createVideos(newStart, newEnd);
-    showVideo(current);
-  } else if (direction === 'prev') {
-    // Similar logic for previous swipe
-    const newStart = Math.max(0, current - totalVideos);
-    const newEnd = Math.min(videosData.length, current + totalVideos + 1);
-    videoContainer.innerHTML = ''; // clear the container and rebuild videos
-    createVideos(newStart, newEnd);
-    showVideo(current);
-  }
+  showVideo(current, true);
 }
 
 // Controls
@@ -316,6 +254,57 @@ modeBtn.addEventListener('click', () => {
   }
   loadVideos(currentJson);
 });
+
+// Swipe handling
+let startY = 0, isSwiping = false;
+
+document.addEventListener('touchstart', e => {
+  if (e.touches.length !== 1) return;
+  startY = e.touches[0].clientY;
+  isSwiping = true;
+
+  const wrappers = document.querySelectorAll('.video-wrapper');
+  [current - 1, current, current + 1].forEach(i => {
+    if (i >= 0 && i < wrappers.length) {
+      wrappers[i].style.transition = "none"; // disable transition while dragging
+    }
+  });
+}, { passive: false });
+
+document.addEventListener('touchmove', e => {
+  if (!isSwiping) return;
+  const moveY = e.touches[0].clientY;
+  const deltaY = moveY - startY;
+
+  const wrappers = document.querySelectorAll('.video-wrapper');
+  [current - 1, current, current + 1].forEach(i => {
+    if (i >= 0 && i < wrappers.length) {
+      wrappers[i].style.transform = `translateY(${(i - current) * 100 + deltaY / window.innerHeight * 100}%)`;
+    }
+  });
+}, { passive: false });
+
+document.addEventListener('touchend', e => {
+  if (!isSwiping) return;
+  isSwiping = false;
+  const moveThreshold = 20; // Swipe threshold for next video load
+
+  const deltaY = e.changedTouches[0].clientY - startY;
+
+  if (deltaY > moveThreshold) {
+    // Swiped down - show previous video
+    prevVideo();
+  } else if (deltaY < -moveThreshold) {
+    // Swiped up - show next video or load more videos
+    if (current + 1 >= loadedVideosCount) {
+      loadedVideosCount++; // Load next video
+      createVideos();
+    }
+    nextVideo();
+  } else {
+    showVideo(current); // Reset position if no significant swipe
+  }
+}, { passive: false });
 
 
 </script>
