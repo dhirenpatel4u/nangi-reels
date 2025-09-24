@@ -1,3 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0" />
+  <title>Nangi Reels</title>
+  <meta property="og:site_name" content="Nangi Reels">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="description" content="Watch Hot Reels">
+  <meta name="keywords" content="Hot Reels, Nangi Reels, Adult Reels">
+	<meta name="robots" content="index, follow">
+  <meta name="language" content="English">
+  <meta name="author" content="Nangi Reels LLP">
+  <meta property="og:title" content="Nangi Reels">
+  <meta property="og:description" content="Watch Hot Reels">
+  <meta property="og:image" content="/files/your-logo.png">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="/files/your-logo.png" type="image/x-icon">
+  
+  <link rel="stylesheet" href="/files/style.css">
+</head>
+<body>
+  <div class="logo">
+    <img src="/files/your-logo.png" alt="Logo">
+  </div>
+  <div id="video-container"></div>
+
+  <!-- Top Controls -->
+  <div id="top-controls">
+    <button id="soundBtn"><img id="soundIcon" src="files/mute.png" alt="Sound"></button>
+    <button id="fitBtn">Fit</button>
+    <button id="fullscreenBtn"><img src="/files/fullscreen-logo.png" alt="Fullscreen"></button>
+    <button id="downloadBtn"><img src="/files/download.png" alt="Download"></button>
+    <button id="shareBtn" style="display: none;"><img src="/files/share.png" alt="Share"></button>
+    <button id="modeBtn">Reels</button> <!-- Mode toggle button -->
+  </div>
+
+  <script>
+
 const videoContainer = document.getElementById('video-container');
 const soundBtn = document.getElementById('soundBtn');
 const soundIcon = document.getElementById('soundIcon');
@@ -277,3 +316,8 @@ modeBtn.addEventListener('click', () => {
   }
   loadVideos(currentJson);
 });
+
+
+</script>
+</body>
+</html>
