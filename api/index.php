@@ -94,7 +94,7 @@ function createVideos() {
     vid.muted = isMuted;
     vid.loop = false;
     vid.playsInline = true;
-    vid.setAttribute('preload', 'none');
+    vid.setAttribute('preload', 'auto');  // Preload next video
     vid.style.objectFit = isContain ? 'contain' : 'cover';
 
     const info = document.createElement('div');
@@ -166,7 +166,7 @@ function showVideo(index, withTransition = true) {
       vid.style.objectFit = isContain ? 'contain' : 'cover';
       vid.play().catch(() => {});
     } else if (i === index + 1) {
-      loadVideo(i);
+      loadVideo(i);  // Preload next video
       vid.pause();
     } else {
       vid.pause();
@@ -287,17 +287,13 @@ document.addEventListener('touchmove', e => {
 document.addEventListener('touchend', e => {
   if (!isSwiping) return;
   isSwiping = false;
-  const moveThreshold = 20; // Swipe threshold for next video load
 
-  const deltaY = e.changedTouches[0].clientY - startY;
+  const endY = e.changedTouches[0].clientY;
+  const deltaY = startY - endY;
 
-  if (deltaY > moveThreshold) {
-    // Swiped down - show previous video
-    prevVideo();
-  } else if (deltaY < -moveThreshold) {
-    // Swiped up - show next video or load more videos
+  if (deltaY < -20) { // Swiped up to load next video
     if (current + 1 >= loadedVideosCount) {
-      loadedVideosCount++; // Load next video
+      loadedVideosCount++;  // Load next video
       createVideos();
     }
     nextVideo();
@@ -306,6 +302,18 @@ document.addEventListener('touchend', e => {
   }
 }, { passive: false });
 
+// Disable swipe down (no more videos will be loaded on swipe down)
+document.addEventListener('touchstart', e => {
+  if (e.touches.length === 1) {
+    startY = e.touches[0].clientY;
+  }
+}, { passive: false });
+
+document.addEventListener('touchmove', e => {
+  const touchCurrentY = e.touches[0].clientY;
+  const scrollTop = window.scrollY || document.documentElement.scrollTop;
+  if (scrollTop === 0 && touchCurrentY > startY) e.preventDefault();
+}, { passive: false });
 
 </script>
 </body>
