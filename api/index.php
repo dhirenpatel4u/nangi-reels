@@ -35,8 +35,8 @@
     <button id="modeBtn">Reels</button> <!-- Mode toggle button -->
   </div>
 
-  <script>
-
+<script>
+	
 const videoContainer = document.getElementById('video-container');
 const soundBtn = document.getElementById('soundBtn');
 const soundIcon = document.getElementById('soundIcon');
@@ -256,17 +256,20 @@ modeBtn.addEventListener('click', () => {
 });
 
 // Swipe handling
-let startY = 0, isSwiping = false;
+let startY = 0;
+let isSwiping = false;
+let isSwipingUp = false;
 
 document.addEventListener('touchstart', e => {
   if (e.touches.length !== 1) return;
   startY = e.touches[0].clientY;
   isSwiping = true;
+  isSwipingUp = false; // Reset swipe direction
 
   const wrappers = document.querySelectorAll('.video-wrapper');
   [current - 1, current, current + 1].forEach(i => {
     if (i >= 0 && i < wrappers.length) {
-      wrappers[i].style.transition = "none"; // disable transition while dragging
+      wrappers[i].style.transition = "none"; // Disable transition during swipe
     }
   });
 }, { passive: false });
@@ -274,7 +277,7 @@ document.addEventListener('touchstart', e => {
 document.addEventListener('touchmove', e => {
   if (!isSwiping) return;
   const moveY = e.touches[0].clientY;
-  const deltaY = moveY - startY;
+  const deltaY = startY - moveY;
 
   const wrappers = document.querySelectorAll('.video-wrapper');
   [current - 1, current, current + 1].forEach(i => {
@@ -282,39 +285,33 @@ document.addEventListener('touchmove', e => {
       wrappers[i].style.transform = `translateY(${(i - current) * 100 + deltaY / window.innerHeight * 100}%)`;
     }
   });
+
+  if (deltaY > 50) isSwipingUp = true;  // Detect swipe up
+
 }, { passive: false });
 
 document.addEventListener('touchend', e => {
   if (!isSwiping) return;
   isSwiping = false;
 
-  const endY = e.changedTouches[0].clientY;
-  const deltaY = startY - endY;
-
-  if (deltaY < -20) { // Swiped up to load next video
-    if (current + 1 >= loadedVideosCount) {
-      loadedVideosCount++;  // Load next video
+  if (isSwipingUp) {
+    if (current + 1 < loadedVideosCount) {
+      loadedVideosCount++;
       createVideos();
     }
-    nextVideo();
+    nextVideo();  // Move to next video
   } else {
-    showVideo(current); // Reset position if no significant swipe
+    showVideo(current); // Reset to the current video
   }
+
+  const wrappers = document.querySelectorAll('.video-wrapper');
+  wrappers.forEach(wrapper => {
+    wrapper.style.transition = "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)"; // Re-enable transition
+  });
 }, { passive: false });
 
-// Disable swipe down (no more videos will be loaded on swipe down)
-document.addEventListener('touchstart', e => {
-  if (e.touches.length === 1) {
-    startY = e.touches[0].clientY;
-  }
-}, { passive: false });
-
-document.addEventListener('touchmove', e => {
-  const touchCurrentY = e.touches[0].clientY;
-  const scrollTop = window.scrollY || document.documentElement.scrollTop;
-  if (scrollTop === 0 && touchCurrentY > startY) e.preventDefault();
-}, { passive: false });
-
+	
 </script>
+
 </body>
 </html>
