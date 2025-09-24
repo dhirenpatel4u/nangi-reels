@@ -73,8 +73,9 @@ video {
 
 .progress-bar {
   height: 100%;
-  background: red;          /* red progress white #fff */
+  background: red;
   width: 0;
+  transition: width 0.1s linear;
 }
 
 /* Controls */
