@@ -8,7 +8,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="description" content="Watch Hot Reels">
   <meta name="keywords" content="Hot Reels, Nangi Reels, Adult Reels">
-	<meta name="robots" content="index, follow">
+  <meta name="robots" content="index, follow">
   <meta name="language" content="English">
   <meta name="author" content="Nangi Reels LLP">
   <meta property="og:title" content="Nangi Reels">
@@ -16,7 +16,6 @@
   <meta property="og:image" content="/files/your-logo.png">
   <meta property="og:type" content="website">
   <link rel="icon" href="/files/your-logo.png" type="image/x-icon">
-  
   <link rel="stylesheet" href="/files/style.css">
 </head>
 <body>
@@ -27,7 +26,7 @@
 
   <!-- Top Controls -->
   <div id="top-controls">
-    <button id="soundBtn"><img id="soundIcon" src="files/mute.png" alt="Sound"></button>
+    <button id="soundBtn"><img id="soundIcon" src="/files/mute.png" alt="Sound"></button>
     <button id="fitBtn">Fit</button>
     <button id="fullscreenBtn"><img src="/files/fullscreen-logo.png" alt="Fullscreen"></button>
     <button id="downloadBtn"><img src="/files/download.png" alt="Download"></button>
@@ -36,277 +35,204 @@
   </div>
 
   <script>
+    const videoContainer = document.getElementById('video-container');
+    const soundBtn = document.getElementById('soundBtn');
+    const soundIcon = document.getElementById('soundIcon');
+    const fitBtn = document.getElementById('fitBtn');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const shareBtn = document.getElementById('shareBtn');
+    const modeBtn = document.getElementById('modeBtn');
 
-const videoContainer = document.getElementById('video-container');
-const soundBtn = document.getElementById('soundBtn');
-const soundIcon = document.getElementById('soundIcon');
-const fitBtn = document.getElementById('fitBtn');
-const fullscreenBtn = document.getElementById('fullscreenBtn');
-const downloadBtn = document.getElementById('downloadBtn');
-const shareBtn = document.getElementById('shareBtn');
-const modeBtn = document.getElementById('modeBtn');
+    let videosData = [];
+    let videoOrder = [];
+    let current = 0;
+    let loadedVideos = []; // Track videos that are currently loaded in the DOM
+    let visibleRange = 5; // Number of videos to load before and after the current video
+    let currentJson = '/files/videos.json';
 
-let videosData = [];
-let videoOrder = [];
-let current = 0;
-let loadedVideos = []; // To track currently loaded videos
-let visibleRange = 5; // Number of videos to load before and after the current video
-let currentJson = '/files/videos.json';
+    let isMuted = true;
+    let isContain = true;
 
-let isMuted = true;
-let isContain = true;
+    // Load videos from JSON
+    function loadVideos(jsonFile) {
+      fetch(jsonFile)
+        .then(res => res.json())
+        .then(data => {
+          videosData = data;
+          shuffleVideos();
+          videoContainer.innerHTML = '';
+          current = 0;
+          createVideos();
+          showVideo(current);
+        });
+    }
 
-// Load videos from JSON
-function loadVideos(jsonFile) {
-  fetch(jsonFile)
-    .then(res => res.json())
-    .then(data => {
-      videosData = data;
-      shuffleVideos();
-      videoContainer.innerHTML = '';
-      current = 0;
-      createVideos();
-      showVideo(current);
-    });
-}
+    loadVideos(currentJson);
 
-loadVideos(currentJson);
+    function shuffleVideos() {
+      videoOrder = [...Array(videosData.length).keys()];
+      for (let i = videoOrder.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [videoOrder[i], videoOrder[j]] = [videoOrder[j], videoOrder[i]];
+      }
+    }
 
-function shuffleVideos() {
-  videoOrder = [...Array(videosData.length).keys()];
-  for (let i = videoOrder.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [videoOrder[i], videoOrder[j]] = [videoOrder[j], videoOrder[i]];
-  }
-}
+    function createVideos() {
+      // Only create videos in the current range + 5 before and after
+      const start = Math.max(0, current - visibleRange);
+      const end = Math.min(videosData.length, current + visibleRange + 1);
 
-function createVideos() {
-  // Only create videos in the current range + 5 before and after
-  const start = Math.max(0, current - visibleRange);
-  const end = Math.min(videosData.length, current + visibleRange + 1);
+      for (let i = start; i < end; i++) {
+        if (!loadedVideos.includes(i)) {
+          const video = videosData[videoOrder[i]];
 
-  for (let i = start; i < end; i++) {
-    if (!loadedVideos.includes(i)) {
-      const video = videosData[videoOrder[i]];
+          const wrapper = document.createElement('div');
+          wrapper.classList.add('video-wrapper');
+          wrapper.dataset.index = i; // Store the index for easy reference
 
-      const wrapper = document.createElement('div');
-      wrapper.classList.add('video-wrapper');
-      wrapper.dataset.index = i; // Store the index for easy reference
+          const vid = document.createElement('video');
+          vid.muted = isMuted;
+          vid.loop = false;
+          vid.playsInline = true;
+          vid.setAttribute('preload', 'none');
+          vid.style.objectFit = isContain ? 'contain' : 'cover';
 
-      const vid = document.createElement('video');
-      vid.muted = isMuted;
-      vid.loop = false;
-      vid.playsInline = true;
-      vid.setAttribute('preload', 'none');
-      vid.style.objectFit = isContain ? 'contain' : 'cover';
+          const info = document.createElement('div');
+          info.classList.add('video-info');
+          info.innerHTML = `
+            <div class="video-title">${video.title}</div>
+            <div class="progress-bar-container">
+              <div class="progress-bar"></div>
+            </div>
+          `;
 
-      const info = document.createElement('div');
-      info.classList.add('video-info');
-      info.innerHTML = `
-        <div class="video-title">${video.title}</div>
-        <div class="progress-bar-container">
-          <div class="progress-bar"></div>
-        </div>
-      `;
+          vid.addEventListener('click', () => showInfo(info));
 
-      vid.addEventListener('click', () => showInfo(info));
+          info.querySelector('.progress-bar-container').addEventListener('click', e => {
+            if (!vid.duration) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const percentage = clickX / rect.width;
+            vid.currentTime = percentage * vid.duration;
+          });
 
-      info.querySelector('.progress-bar-container').addEventListener('click', e => {
-        if (!vid.duration) return;
-        const rect = e.currentTarget.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const percentage = clickX / rect.width;
-        vid.currentTime = percentage * vid.duration;
+          vid.addEventListener('timeupdate', () => {
+            if (vid.duration) {
+              const progress = (vid.currentTime / vid.duration) * 100;
+              info.querySelector('.progress-bar').style.width = progress + '%';
+            }
+          });
+
+          vid.addEventListener('ended', () => nextVideo());
+
+          wrapper.appendChild(vid);
+          wrapper.appendChild(info);
+          videoContainer.appendChild(wrapper);
+
+          loadedVideos.push(i); // Add to the loaded videos list
+        }
+      }
+    }
+
+    function removeOutOfViewVideos() {
+      // Remove videos outside the visible range
+      const start = Math.max(0, current - visibleRange);
+      const end = Math.min(videosData.length, current + visibleRange + 1);
+
+      document.querySelectorAll('.video-wrapper').forEach(wrapper => {
+        const index = parseInt(wrapper.dataset.index);
+        if (index < start || index >= end) {
+          const vid = wrapper.querySelector('video');
+          vid.pause();
+          vid.removeAttribute('src');
+          vid.load();
+          wrapper.remove(); // Remove the video from DOM
+          loadedVideos = loadedVideos.filter(i => i !== index); // Remove from loaded list
+        }
       });
+    }
 
-      vid.addEventListener('timeupdate', () => {
-        if (vid.duration) {
-          const progress = (vid.currentTime / vid.duration) * 100;
-          info.querySelector('.progress-bar').style.width = progress + '%';
+    function showInfo(info) {
+      info.classList.add('show');
+      setTimeout(() => info.classList.remove('show'), 5000);
+    }
+
+    function loadVideo(index) {
+      const wrappers = document.querySelectorAll('.video-wrapper');
+      if (index < 0 || index >= wrappers.length) return;
+
+      const vid = wrappers[index].querySelector('video');
+      const data = videosData[videoOrder[index]];
+
+      if (!vid.src) {
+        vid.src = data.src;
+        vid.load();
+      }
+    }
+
+    function showVideo(index) {
+      // Ensure videos in range are created
+      createVideos();
+
+      const wrappers = document.querySelectorAll('.video-wrapper');
+      wrappers.forEach((wrapper, i) => {
+        const vid = wrapper.querySelector('video');
+        wrapper.style.transition = "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)";
+        wrapper.style.transform = `translateY(${(i - index) * 100}%)`;
+
+        if (i === index) {
+          loadVideo(i);
+          vid.muted = isMuted;
+          vid.style.objectFit = isContain ? 'contain' : 'cover';
+          vid.play().catch(() => {});
+        } else if (i === index + 1) {
+          loadVideo(i);
+          vid.pause();
+        } else {
+          vid.pause();
+          vid.removeAttribute('src');
+          vid.load();
         }
       });
 
-      vid.addEventListener('ended', () => nextVideo());
-
-      wrapper.appendChild(vid);
-      wrapper.appendChild(info);
-      videoContainer.appendChild(wrapper);
-
-      loadedVideos.push(i); // Add to the loaded videos list
+      // Remove videos that are out of view
+      removeOutOfViewVideos();
     }
-  }
-}
 
-function removeOutOfViewVideos() {
-  // Remove videos outside the visible range
-  const start = Math.max(0, current - visibleRange);
-  const end = Math.min(videosData.length, current + visibleRange + 1);
-
-  document.querySelectorAll('.video-wrapper').forEach(wrapper => {
-    const index = parseInt(wrapper.dataset.index);
-    if (index < start || index >= end) {
-      wrapper.querySelector('video').pause();
-      wrapper.querySelector('video').removeAttribute('src');
-      wrapper.remove(); // Remove the video from DOM
-      loadedVideos = loadedVideos.filter(i => i !== index); // Remove from loaded list
+    function nextVideo() {
+      current = (current + 1) % videoOrder.length;
+      showVideo(current);
     }
-  });
-}
 
-function showInfo(info) {
-  info.classList.add('show');
-  setTimeout(() => info.classList.remove('show'), 5000);
-}
-
-function loadVideo(index) {
-  const wrappers = document.querySelectorAll('.video-wrapper');
-  if (index < 0 || index >= wrappers.length) return;
-
-  const vid = wrappers[index].querySelector('video');
-  const data = videosData[videoOrder[index]];
-
-  if (!vid.src) {
-    vid.src = data.src;
-    vid.load();
-  }
-}
-
-function showVideo(index) {
-  // Ensure videos in range are created
-  createVideos();
-
-  const wrappers = document.querySelectorAll('.video-wrapper');
-  wrappers.forEach((wrapper, i) => {
-    const vid = wrapper.querySelector('video');
-    wrapper.style.transition = "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)";
-    wrapper.style.transform = `translateY(${(i - index) * 100}%)`;
-
-    if (i === index) {
-      loadVideo(i);
-      vid.muted = isMuted;
-      vid.style.objectFit = isContain ? 'contain' : 'cover';
-      vid.play().catch(() => {});
-    } else if (i === index + 1) {
-      loadVideo(i);
-      vid.pause();
-    } else {
-      vid.pause();
-      vid.removeAttribute('src');
-      vid.load();
+    function prevVideo() {
+      current = (current - 1 + videoOrder.length) % videoOrder.length;
+      showVideo(current);
     }
-  });
 
-  // Remove videos that are out of view
-  removeOutOfViewVideos();
-}
+    // Controls
+    soundBtn.addEventListener('click', () => {
+      isMuted = !isMuted;
+      document.querySelectorAll('.video-wrapper video').forEach(v => v.muted = isMuted);
+      soundIcon.src = isMuted ? '/files/mute.png' : '/files/unmute.png';
+    });
 
-function nextVideo() {
-  current = (current + 1) % videoOrder.length;
-  showVideo(current);
-}
+    fitBtn.addEventListener('click', () => {
+      isContain = !isContain;
+      document.querySelectorAll('.video-wrapper video').forEach(v => {
+        v.style.objectFit = isContain ? 'contain' : 'cover';
+      });
+      fitBtn.textContent = isContain ? 'Fit' : 'Fill';
+    });
 
-function prevVideo() {
-  current = (current - 1 + videoOrder.length) % videoOrder.length;
-  showVideo(current);
-}
+    fullscreenBtn.addEventListener('click', () => {
+      const vid = document.querySelectorAll('.video-wrapper')[current].querySelector('video');
 
-// Controls
-soundBtn.addEventListener('click', () => {
-  isMuted = !isMuted;
-  document.querySelectorAll('.video-wrapper video').forEach(v => v.muted = isMuted);
-  soundIcon.src = isMuted ? '/files/mute.png' : '/files/unmute.png';
-});
-
-fitBtn.addEventListener('click', () => {
-  isContain = !isContain;
-  document.querySelectorAll('.video-wrapper video').forEach(v => {
-    v.style.objectFit = isContain ? 'contain' : 'cover';
-  });
-  fitBtn.textContent = isContain ? 'Fit' : 'Fill';
-});
-
-fullscreenBtn.addEventListener('click', () => {
-  const vid = document.querySelectorAll('.video-wrapper')[current].querySelector('video');
-
-  if (vid.requestFullscreen) vid.requestFullscreen();
-  else if (vid.webkitEnterFullscreen) vid.webkitEnterFullscreen();
-  else if (vid.webkitRequestFullscreen) vid.webkitRequestFullscreen();
-  else if (vid.msRequestFullscreen) vid.msRequestFullscreen();
-
-  const setOrientation = () => {
-    const aspect = vid.videoWidth / vid.videoHeight;
-    if (aspect > 1) screen.orientation?.lock('landscape').catch(() => {});
-    else screen.orientation?.lock('portrait').catch(() => {});
-  };
-
-  if (vid.readyState >= 1) setOrientation();
-  else vid.addEventListener('loadedmetadata', setOrientation, { once: true });
-});
-
-downloadBtn.addEventListener('click', () => {
-  const vid = document.querySelectorAll('.video-wrapper')[current].querySelector('video');
-  if (!vid.src) return alert("Video not loaded yet.");
-  const a = document.createElement('a');
-  a.href = vid.src;
-  a.download = `video-${current + 1}.mp4`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-});
-
-shareBtn.addEventListener('click', async () => {
-  const vid = document.querySelectorAll('.video-wrapper')[current].querySelector('video');
-  if (!vid.src) return alert("Video not loaded yet.");
-  if (navigator.share) {
-    try {
-      await navigator.share({ title: 'Check out this video', url: vid.src });
-    } catch (err) {
-      console.error("Share canceled or failed", err);
-    }
-  } else {
-    alert(`Share manually: ${vid.src}`);
-  }
-});
-
-modeBtn.addEventListener('click', () => {
-  if (modeBtn.textContent === 'Reels') {
-    modeBtn.textContent = 'MMS';
-    currentJson = 'https://script.google.com/macros/s/AKfycbxMBFy1Zix7peh_8LGjJewllsmGvFiO4BNr74X1R5bPZhHWVUlaDXb1Ma4PKuurBWMc/exec';
-  } else {
-    modeBtn.textContent = 'Reels';
-    currentJson = '/files/videos.json';
-  }
-  loadVideos(currentJson);
-});
-
-// Swipe handling
-let startY = 0, isSwiping = false;
-
-document.addEventListener('touchstart', e => {
-  if (e.touches.length !== 1) return;
-  startY = e.touches[0].clientY;
-  isSwiping = true;
-
-  const wrappers = document.querySelectorAll('.video-wrapper');
-  wrappers.forEach(wrapper => wrapper.style.transition = "none");
-}, { passive: true });
-
-document.addEventListener('touchmove', e => {
-  if (!isSwiping) return;
-  const diff = e.touches[0].clientY - startY;
-  if (diff > 50) {
-    prevVideo();
-    isSwiping = false;
-  } else if (diff < -50) {
-    nextVideo();
-    isSwiping = false;
-  }
-}, { passive: true });
-
-document.addEventListener('touchend', () => {
-  isSwiping = false;
-}, { passive: true });
-
-</script>
+      if (vid.requestFullscreen) vid.requestFullscreen();
+      else if (vid.webkitEnterFullscreen) vid.webkitEnterFullscreen();
+      else if (vid.webkitRequestFullscreen) vid.webkitRequestFullscreen();
+      else if (vid.msRequestFullscreen) vid.msRequestFullscreen();
+    });
+  </script>
 </body>
 </html>
