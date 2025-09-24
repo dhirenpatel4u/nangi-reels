@@ -2,40 +2,31 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0" />
-  <title>Nangi Reels</title>
-  <meta name="description" content="Watch Hot Reels">
-  <meta name="keywords" content="Hot Reels, Nangi Reels, Adult Reels">
-  <meta name="robots" content="index, follow">
-  <meta property="og:title" content="Nangi Reels">
-  <meta property="og:description" content="Watch Hot Reels">
-  <meta property="og:image" content="/files/your-logo.png">
-  <meta property="og:type" content="website">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="author" content="Nangi Reels LLP">
-  <link rel="icon" href="/files/your-logo.png" type="image/x-icon">
-  <link rel="stylesheet" href="/files/style.css">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://script.google.com; style-src 'self'; img-src 'self' data:;">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Reel Player Debug</title>
+  <link rel="stylesheet" href="style.css" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' https://script.google.com; style-src 'self'; img-src 'self' data:;">
 </head>
 <body>
-  <div class="logo">
-    <img src="/files/your-logo.png" alt="App Logo">
-  </div>
-
+  <div class="logo"><img src="/files/your-logo.png" alt="Logo"></div>
   <div id="loading">Loading videos...</div>
   <div id="video-container"></div>
 
   <div id="top-controls">
-    <button id="soundBtn" aria-label="Toggle Sound"><img id="soundIcon" src="/files/mute.png" alt="Sound Icon"></button>
+    <button id="soundBtn" aria-label="Toggle Sound"><img id="soundIcon" src="/files/mute.png" alt="Sound"></button>
     <button id="fitBtn" aria-label="Toggle Fit/Fill">Fit</button>
-    <button id="fullscreenBtn" aria-label="Enter Fullscreen"><img src="/files/fullscreen-logo.png" alt="Fullscreen Icon"></button>
-    <button id="downloadBtn" aria-label="Download Video"><img src="/files/download.png" alt="Download Icon"></button>
-    <button id="shareBtn" style="display: none;" aria-label="Share Video"><img src="/files/share.png" alt="Share Icon"></button>
+    <button id="fullscreenBtn" aria-label="Fullscreen"><img src="/files/fullscreen-logo.png" alt="FS"></button>
+    <button id="downloadBtn" aria-label="Download"><img src="/files/download.png" alt="DL"></button>
+    <button id="shareBtn" aria-label="Share" style="display:none;"><img src="/files/share.png" alt="Share"></button>
     <button id="modeBtn" aria-label="Toggle Mode">Reels</button>
   </div>
 
   <script>
+    console.log("App start");
+
     const videoContainer = document.getElementById('video-container');
+    const loading = document.getElementById('loading');
     const soundBtn = document.getElementById('soundBtn');
     const soundIcon = document.getElementById('soundIcon');
     const fitBtn = document.getElementById('fitBtn');
@@ -43,87 +34,111 @@
     const downloadBtn = document.getElementById('downloadBtn');
     const shareBtn = document.getElementById('shareBtn');
     const modeBtn = document.getElementById('modeBtn');
-    const loading = document.getElementById('loading');
 
     let videosData = [];
     let videoOrder = [];
     let current = 0;
-    let infoTimeout;
-    let isMuted = true;   // ensure start muted so autoplay works
+    let isMuted = true;
     let isContain = true;
+    let infoTimeout = null;
+    let dragging = false;
     let currentJson = '/files/videos.json';
 
     async function loadVideos(jsonFile) {
-      console.log("loadVideos:", jsonFile);
+      console.log("loadVideos():", jsonFile);
       loading.style.display = 'block';
       try {
-        const res = await fetch(jsonFile);
-        if (!res.ok) throw new Error("Failed to fetch JSON: " + res.status);
-        const data = await res.json();
-        console.log("videos JSON data:", data);
-        videosData = data;
-        if (!Array.isArray(videosData) || videosData.length === 0) {
-          throw new Error("videosData is not a nonempty array");
+        const response = await fetch(jsonFile);
+        console.log("Fetched JSON response status:", response.status);
+        if (!response.ok) {
+          throw new Error("HTTP error " + response.status);
         }
+        const data = await response.json();
+        console.log("JSON data:", data);
+        if (!Array.isArray(data)) {
+          throw new Error("JSON is not an array");
+        }
+        if (data.length === 0) {
+          throw new Error("JSON array is empty");
+        }
+        videosData = data;
         shuffleVideos();
-        videoContainer.innerHTML = '';
+        videoContainer.innerHTML = '';  // clear any existing
         current = 0;
         createVideos();
         showVideo(current);
         loading.style.display = 'none';
+        console.log("loadVideos completed");
       } catch (err) {
-        console.error("Error loading videos:", err);
-        loading.textContent = 'Failed to load videos.';
+        console.error("Error in loadVideos:", err);
+        loading.textContent = "Failed to load videos.";
       }
     }
 
-    loadVideos(currentJson);
-
     function shuffleVideos() {
-      videoOrder = [...Array(videosData.length).keys()];
+      videoOrder = videosData.map((_, idx) => idx);
       for (let i = videoOrder.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [videoOrder[i], videoOrder[j]] = [videoOrder[j], videoOrder[i]];
       }
+      console.log("Shuffled order:", videoOrder);
     }
 
     function createVideos() {
-      videoOrder.forEach(videoIndex => {
-        const video = videosData[videoIndex];
+      console.log("createVideos(): count", videoOrder.length);
+      videoOrder.forEach((vidIdx, wrapperIndex) => {
+        const videoObj = videosData[vidIdx];
         const wrapper = document.createElement('div');
         wrapper.classList.add('video-wrapper');
 
         const vid = document.createElement('video');
-        // remove the preload attribute or set to metadata initially
         vid.muted = isMuted;
         vid.loop = false;
         vid.playsInline = true;
+        vid.setAttribute('playsinline', '');
         vid.setAttribute('preload', 'metadata');
         vid.style.objectFit = isContain ? 'contain' : 'cover';
+
+        // Debug events
+        vid.addEventListener('loadedmetadata', () => {
+          console.log("[wrapper #" + wrapperIndex + "] metadata loaded, duration:", vid.duration, "src:", vid.src);
+        });
+        vid.addEventListener('play', () => {
+          console.log("[wrapper #" + wrapperIndex + "] play event, src:", vid.src);
+        });
+        vid.addEventListener('pause', () => {
+          console.log("[wrapper #" + wrapperIndex + "] pause event, src:", vid.src);
+        });
+        vid.addEventListener('error', (e) => {
+          console.error("[wrapper #" + wrapperIndex + "] video error, src:", vid.src, e);
+        });
 
         const info = document.createElement('div');
         info.classList.add('video-info');
         info.innerHTML = `
-          <div class="video-title">${video.title || ''}</div>
+          <div class="video-title">${videoObj.title || ''}</div>
           <div class="progress-bar-container">
             <div class="progress-bar"></div>
           </div>
         `;
 
-        let dragging = false;
         const progressBarContainer = info.querySelector('.progress-bar-container');
         const progressBar = info.querySelector('.progress-bar');
 
         const seek = (e) => {
           if (!vid.duration) return;
           const rect = progressBarContainer.getBoundingClientRect();
-          const clientX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+          let clientX;
+          if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+          } else {
+            clientX = e.clientX;
+          }
           const pct = (clientX - rect.left) / rect.width;
           const clamped = Math.max(0, Math.min(1, pct));
           vid.currentTime = clamped * vid.duration;
         };
 
-        // Desktop dragging
         progressBarContainer.addEventListener('mousedown', e => {
           dragging = true;
           seek(e);
@@ -135,7 +150,6 @@
           dragging = false;
         });
 
-        // Mobile dragging
         progressBarContainer.addEventListener('touchstart', e => {
           dragging = true;
           seek(e);
@@ -147,8 +161,6 @@
           dragging = false;
         });
 
-        vid.addEventListener('click', () => showInfo(info));
-
         vid.addEventListener('timeupdate', () => {
           if (vid.duration && !dragging) {
             const pct = (vid.currentTime / vid.duration) * 100;
@@ -156,10 +168,8 @@
           }
         });
 
-        vid.addEventListener('ended', () => nextVideo());
-
-        vid.addEventListener('error', (e) => {
-          console.error("Video load/playing error:", e, "src:", vid.src);
+        vid.addEventListener('ended', () => {
+          nextVideo();
         });
 
         wrapper.appendChild(vid);
@@ -168,51 +178,50 @@
       });
     }
 
-    function showInfo(info) {
-      info.classList.add('show');
-      clearTimeout(infoTimeout);
-      infoTimeout = setTimeout(() => info.classList.remove('show'), 5000);
-    }
-
     function loadVideo(index) {
       const wrappers = document.querySelectorAll('.video-wrapper');
-      if (index < 0 || index >= wrappers.length) return;
+      if (index < 0 || index >= wrappers.length) {
+        console.warn("loadVideo: invalid index", index);
+        return;
+      }
       const vid = wrappers[index].querySelector('video');
-      const data = videosData[videoOrder[index]];
+      const obj = videosData[videoOrder[index]];
+      if (!obj || !obj.src) {
+        console.warn("loadVideo: no video object or src at index", index, obj);
+        return;
+      }
       if (!vid.src) {
-        console.log("Setting vid.src for index", index, ":", data.src);
-        vid.src = data.src;
+        console.log("loadVideo: setting src at index", index, obj.src);
+        vid.src = obj.src;
         vid.load();
       }
     }
 
     function showVideo(index, withTransition = true) {
+      console.log("showVideo:", index);
       const wrappers = document.querySelectorAll('.video-wrapper');
       wrappers.forEach((wrapper, i) => {
         const vid = wrapper.querySelector('video');
-        wrapper.style.transition = withTransition
-          ? "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)"
-          : "none";
+        wrapper.style.transition = withTransition ? "transform 0.5s ease" : "none";
         wrapper.style.transform = `translateY(${(i - index) * 100}%)`;
 
         if (i === index) {
           loadVideo(i);
           vid.muted = isMuted;
           vid.style.objectFit = isContain ? 'contain' : 'cover';
-          vid.play()
-             .then(() => {
-               console.log("Playback started for video index", i, vid.src);
-             })
-             .catch(err => {
-               console.warn("Play() promise rejected:", err, "for video", vid.src);
-             });
+          const playPromise = vid.play();
+          if (playPromise !== undefined) {
+            playPromise.then(() => {
+              console.log("play() succeeded for index", i, "src:", vid.src);
+            }).catch(err => {
+              console.warn("play() rejected for index", i, "src:", vid.src, err);
+            });
+          }
         } else if (i === index + 1 || i === index - 1) {
           loadVideo(i);
           vid.pause();
         } else {
-          // Unload others
           vid.pause();
-          // Only remove src for videos far away
           vid.removeAttribute('src');
           vid.load();
         }
@@ -223,13 +232,12 @@
       current = (current + 1) % videoOrder.length;
       showVideo(current);
     }
-
     function prevVideo() {
       current = (current - 1 + videoOrder.length) % videoOrder.length;
       showVideo(current);
     }
 
-    // Controls
+    // Button event listeners
     soundBtn.addEventListener('click', () => {
       isMuted = !isMuted;
       document.querySelectorAll('video').forEach(v => v.muted = isMuted);
@@ -247,20 +255,12 @@
       if (vid.requestFullscreen) vid.requestFullscreen();
       else if (vid.webkitRequestFullscreen) vid.webkitRequestFullscreen();
       else if (vid.msRequestFullscreen) vid.msRequestFullscreen();
-
-      const setOrientation = () => {
-        const aspect = vid.videoWidth / vid.videoHeight;
-        if (aspect > 1) screen.orientation?.lock('landscape').catch(() => {});
-        else screen.orientation?.lock('portrait').catch(() => {});
-      };
-      if (vid.readyState >= 1) setOrientation();
-      else vid.addEventListener('loadedmetadata', setOrientation, { once: true });
     });
 
     downloadBtn.addEventListener('click', () => {
       const vid = document.querySelectorAll('.video-wrapper')[current].querySelector('video');
       if (!vid.src) {
-        alert("Video not loaded yet.");
+        alert("Video not loaded yet");
         return;
       }
       const a = document.createElement('a');
@@ -274,24 +274,24 @@
     shareBtn.addEventListener('click', async () => {
       const vid = document.querySelectorAll('.video-wrapper')[current].querySelector('video');
       if (!vid.src) {
-        alert("Video not loaded yet.");
+        alert("Video not loaded");
         return;
       }
       if (navigator.share) {
         try {
-          await navigator.share({ title: 'Check out this video', url: vid.src });
+          await navigator.share({ title: 'Video', url: vid.src });
         } catch (err) {
-          console.error("Share canceled or failed", err);
+          console.error("Share failed:", err);
         }
       } else {
-        alert(`Share manually: ${vid.src}`);
+        alert("Share URL: " + vid.src);
       }
     });
 
     modeBtn.addEventListener('click', () => {
       if (modeBtn.textContent === 'Reels') {
         modeBtn.textContent = 'MMS';
-        currentJson = 'https://script.google.com/macros/s/AKfycbxMBFy1Zix7peh_8LGjJewllsmGvFiO4BNr74X1R5bPZhHWVUlaDXb1Ma4PKuurBWMc/exec';
+        currentJson = 'https://script.google.com/macros/s/.../exec';  // your actual script URL
       } else {
         modeBtn.textContent = 'Reels';
         currentJson = '/files/videos.json';
@@ -299,7 +299,7 @@
       loadVideos(currentJson);
     });
 
-    // Swipe support
+    // Swipe touch handling
     let startY = 0, isSwiping = false;
     document.addEventListener('touchstart', e => {
       if (e.touches.length !== 1) return;
@@ -320,7 +320,7 @@
       const wrappers = document.querySelectorAll('.video-wrapper');
       [current - 1, current, current + 1].forEach(i => {
         if (i >= 0 && i < wrappers.length) {
-          wrappers[i].style.transform = `translateY(${(i - current) * 100 + deltaY / window.innerHeight * 100}%)`;
+          wrappers[i].style.transform = `translateY(${(i - current) * 100 + (deltaY / window.innerHeight) * 100}%)`;
         }
       });
     }, { passive: false });
@@ -339,6 +339,9 @@
       if (e.key === 'ArrowUp') prevVideo();
       else if (e.key === 'ArrowDown') nextVideo();
     });
+
+    console.log("Trigger initial loadVideos");
+    loadVideos(currentJson);
   </script>
 </body>
 </html>
