@@ -52,7 +52,7 @@ let current = 0;
 let infoTimeout;
 let isMuted = true;
 let isContain = true;
-let currentJson = '/files/videos.json';
+let currentJson = 'videos.json';
 
 const INITIAL_BATCH = 40;
 const LOAD_MORE_BATCH = 25;
@@ -109,18 +109,54 @@ function createBatch(count) {
 
     vid.addEventListener('click', () => showInfo(info));
 
-    info.querySelector('.progress-bar-container').addEventListener('click', e => {
-      if (!vid.duration) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const percentage = clickX / rect.width;
-      vid.currentTime = percentage * vid.duration;
+    // Progress bar with drag support
+    const progressContainer = info.querySelector('.progress-bar-container');
+    const progressBar = info.querySelector('.progress-bar');
+    let isDragging = false;
+
+    function updateSeek(clientX) {
+      const rect = progressContainer.getBoundingClientRect();
+      const offsetX = clientX - rect.left;
+      const percentage = Math.max(0, Math.min(1, offsetX / rect.width));
+      progressBar.style.width = (percentage * 100) + '%';
+      if (vid.duration) {
+        vid.currentTime = percentage * vid.duration;
+      }
+    }
+
+    // Mouse drag
+    progressContainer.addEventListener('mousedown', e => {
+      isDragging = true;
+      updateSeek(e.clientX);
     });
 
+    document.addEventListener('mousemove', e => {
+      if (isDragging) updateSeek(e.clientX);
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isDragging) isDragging = false;
+    });
+
+    // Touch drag
+    progressContainer.addEventListener('touchstart', e => {
+      isDragging = true;
+      updateSeek(e.touches[0].clientX);
+    }, { passive: true });
+
+    document.addEventListener('touchmove', e => {
+      if (isDragging) updateSeek(e.touches[0].clientX);
+    }, { passive: true });
+
+    document.addEventListener('touchend', () => {
+      if (isDragging) isDragging = false;
+    });
+
+    // Progress update while playing
     vid.addEventListener('timeupdate', () => {
-      if (vid.duration) {
+      if (!isDragging && vid.duration) {
         const progress = (vid.currentTime / vid.duration) * 100;
-        info.querySelector('.progress-bar').style.width = progress + '%';
+        progressBar.style.width = progress + '%';
       }
     });
 
@@ -134,7 +170,6 @@ function createBatch(count) {
 }
 
 function maybeLoadMore() {
-  // If user is on second-last loaded video, load more
   if (current >= loadedCount - 2 && loadedCount < videoOrder.length) {
     createBatch(LOAD_MORE_BATCH);
   }
@@ -201,7 +236,7 @@ function prevVideo() {
 soundBtn.addEventListener('click', () => {
   isMuted = !isMuted;
   document.querySelectorAll('.video-wrapper video').forEach(v => v.muted = isMuted);
-  soundIcon.src = isMuted ? '/files/mute.png' : '/files/unmute.png';
+  soundIcon.src = isMuted ? 'mute.png' : 'unmute.png';
 });
 
 fitBtn.addEventListener('click', () => {
@@ -261,7 +296,7 @@ modeBtn.addEventListener('click', () => {
     currentJson = 'mms_videos.json';
   } else {
     modeBtn.textContent = 'Reels';
-    currentJson = '/files/videos.json';
+    currentJson = 'videos.json';
   }
   loadVideos(currentJson);
 });
@@ -323,7 +358,6 @@ document.addEventListener('touchmove', e => {
   const scrollTop = window.scrollY || document.documentElement.scrollTop;
   if(scrollTop === 0 && touchCurrentY > touchStartY) e.preventDefault();
 }, { passive:false });
-
 
 	
 </script>
