@@ -52,8 +52,11 @@ let current = 0;
 let infoTimeout;
 let isMuted = true;
 let isContain = true;
-let currentJson = '/files/videos.json';
-let loadedVideosCount = 5;  // Initially load only 5 videos
+let currentJson = '/filesvideos.json';
+
+const INITIAL_BATCH = 40;
+const LOAD_MORE_BATCH = 25;
+let loadedCount = 0; // how many videos created in DOM
 
 // Load videos from JSON
 function loadVideos(jsonFile) {
@@ -64,15 +67,14 @@ function loadVideos(jsonFile) {
       shuffleVideos();
       videoContainer.innerHTML = '';
       current = 0;
-      loadedVideosCount = 5; // Reset to 5 on page load
-      createVideos();  // Create only the first 5 videos
+      loadedCount = 0;
+      createBatch(INITIAL_BATCH);
       showVideo(current);
     });
 }
 
 loadVideos(currentJson);
 
-// Shuffle videos order at page load
 function shuffleVideos() {
   videoOrder = [...Array(videosData.length).keys()];
   for (let i = videoOrder.length - 1; i > 0; i--) {
@@ -81,11 +83,10 @@ function shuffleVideos() {
   }
 }
 
-function createVideos() {
-  // Create only the videos that are needed (based on loadedVideosCount)
-  for (let i = 0; i < loadedVideosCount; i++) {
-    const videoIndex = videoOrder[i];
-    const video = videosData[videoIndex];
+function createBatch(count) {
+  const end = Math.min(loadedCount + count, videoOrder.length);
+  for (let i = loadedCount; i < end; i++) {
+    const video = videosData[videoOrder[i]];
 
     const wrapper = document.createElement('div');
     wrapper.classList.add('video-wrapper');
@@ -94,7 +95,7 @@ function createVideos() {
     vid.muted = isMuted;
     vid.loop = false;
     vid.playsInline = true;
-    vid.setAttribute('preload', 'auto');  // Preload next video
+    vid.setAttribute('preload', 'none');
     vid.style.objectFit = isContain ? 'contain' : 'cover';
 
     const info = document.createElement('div');
@@ -128,6 +129,14 @@ function createVideos() {
     wrapper.appendChild(vid);
     wrapper.appendChild(info);
     videoContainer.appendChild(wrapper);
+  }
+  loadedCount = end;
+}
+
+function maybeLoadMore() {
+  // If user is on second-last loaded video, load more
+  if (current >= loadedCount - 2 && loadedCount < videoOrder.length) {
+    createBatch(LOAD_MORE_BATCH);
   }
 }
 
@@ -166,7 +175,7 @@ function showVideo(index, withTransition = true) {
       vid.style.objectFit = isContain ? 'contain' : 'cover';
       vid.play().catch(() => {});
     } else if (i === index + 1) {
-      loadVideo(i);  // Preload next video
+      loadVideo(i);
       vid.pause();
     } else {
       vid.pause();
@@ -174,6 +183,8 @@ function showVideo(index, withTransition = true) {
       vid.load();
     }
   });
+
+  maybeLoadMore();
 }
 
 function nextVideo() {
@@ -247,7 +258,7 @@ shareBtn.addEventListener('click', async () => {
 modeBtn.addEventListener('click', () => {
   if (modeBtn.textContent === 'Reels') {
     modeBtn.textContent = 'MMS';
-    currentJson = 'https://script.google.com/macros/s/AKfycbxMBFy1Zix7peh_8LGjJewllsmGvFiO4BNr74X1R5bPZhHWVUlaDXb1Ma4PKuurBWMc/exec';
+    currentJson = 'mms_videos.json';
   } else {
     modeBtn.textContent = 'Reels';
     currentJson = '/files/videos.json';
@@ -256,20 +267,17 @@ modeBtn.addEventListener('click', () => {
 });
 
 // Swipe handling
-let startY = 0;
-let isSwiping = false;
-let isSwipingUp = false;
+let startY = 0, isSwiping = false;
 
 document.addEventListener('touchstart', e => {
   if (e.touches.length !== 1) return;
   startY = e.touches[0].clientY;
   isSwiping = true;
-  isSwipingUp = false; // Reset swipe direction
 
   const wrappers = document.querySelectorAll('.video-wrapper');
   [current - 1, current, current + 1].forEach(i => {
     if (i >= 0 && i < wrappers.length) {
-      wrappers[i].style.transition = "none"; // Disable transition during swipe
+      wrappers[i].style.transition = "none"; // disable transition while dragging
     }
   });
 }, { passive: false });
@@ -277,7 +285,7 @@ document.addEventListener('touchstart', e => {
 document.addEventListener('touchmove', e => {
   if (!isSwiping) return;
   const moveY = e.touches[0].clientY;
-  const deltaY = startY - moveY;
+  const deltaY = moveY - startY;
 
   const wrappers = document.querySelectorAll('.video-wrapper');
   [current - 1, current, current + 1].forEach(i => {
@@ -285,30 +293,37 @@ document.addEventListener('touchmove', e => {
       wrappers[i].style.transform = `translateY(${(i - current) * 100 + deltaY / window.innerHeight * 100}%)`;
     }
   });
-
-  if (deltaY > 50) isSwipingUp = true;  // Detect swipe up
-
 }, { passive: false });
 
 document.addEventListener('touchend', e => {
   if (!isSwiping) return;
   isSwiping = false;
 
-  if (isSwipingUp) {
-    if (current + 1 < loadedVideosCount) {
-      loadedVideosCount++;
-      createVideos();
-    }
-    nextVideo();  // Move to next video
-  } else {
-    showVideo(current); // Reset to the current video
-  }
+  const endY = e.changedTouches[0].clientY;
+  const deltaY = startY - endY;
 
-  const wrappers = document.querySelectorAll('.video-wrapper');
-  wrappers.forEach(wrapper => {
-    wrapper.style.transition = "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)"; // Re-enable transition
-  });
+  if (deltaY > 50) nextVideo();
+  else if (deltaY < -50) prevVideo();
+  else showVideo(current, true); // snap back smoothly
 }, { passive: false });
+
+// Keyboard support
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowUp') prevVideo();
+  else if (e.key === 'ArrowDown') nextVideo();
+});
+
+// Disable pull-to-refresh
+let touchStartY = 0;
+document.addEventListener('touchstart', e => { 
+  if (e.touches.length === 1) touchStartY = e.touches[0].clientY; 
+}, { passive:false });
+document.addEventListener('touchmove', e => {
+  const touchCurrentY = e.touches[0].clientY;
+  const scrollTop = window.scrollY || document.documentElement.scrollTop;
+  if(scrollTop === 0 && touchCurrentY > touchStartY) e.preventDefault();
+}, { passive:false });
+
 
 	
 </script>
