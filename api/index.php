@@ -52,7 +52,7 @@ let current = 0;
 let infoTimeout;
 let isMuted = true;
 let isContain = true;
-let currentJson = '/filesvideos.json';
+let currentJson = '/files/videos.json';
 
 const INITIAL_BATCH = 40;
 const LOAD_MORE_BATCH = 25;
