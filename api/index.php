@@ -1,42 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0" />
   <title>Nangi Reels</title>
-  <meta property="og:site_name" content="Nangi Reels">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="description" content="Watch Hot Reels">
   <meta name="keywords" content="Hot Reels, Nangi Reels, Adult Reels">
-	<meta name="robots" content="index, follow">
-  <meta name="language" content="English">
-  <meta name="author" content="Nangi Reels LLP">
+  <meta name="robots" content="index, follow">
   <meta property="og:title" content="Nangi Reels">
   <meta property="og:description" content="Watch Hot Reels">
   <meta property="og:image" content="/files/your-logo.png">
   <meta property="og:type" content="website">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="author" content="Nangi Reels LLP">
   <link rel="icon" href="/files/your-logo.png" type="image/x-icon">
-  
   <link rel="stylesheet" href="/files/style.css">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://script.google.com; style-src 'self'; img-src 'self' data:;">
 </head>
 <body>
   <div class="logo">
-    <img src="/files/your-logo.png" alt="Logo">
+    <img src="/files/your-logo.png" alt="App Logo">
   </div>
+
+  <div id="loading">Loading videos...</div>
   <div id="video-container"></div>
 
   <!-- Top Controls -->
   <div id="top-controls">
-    <button id="soundBtn"><img id="soundIcon" src="files/mute.png" alt="Sound"></button>
-    <button id="fitBtn">Fit</button>
-    <button id="fullscreenBtn"><img src="/files/fullscreen-logo.png" alt="Fullscreen"></button>
-    <button id="downloadBtn"><img src="/files/download.png" alt="Download"></button>
-    <button id="shareBtn" style="display: none;"><img src="/files/share.png" alt="Share"></button>
-    <button id="modeBtn">Reels</button> <!-- Mode toggle button -->
+    <button id="soundBtn" aria-label="Toggle Sound"><img id="soundIcon" src="/files/mute.png" alt="Sound Icon"></button>
+    <button id="fitBtn" aria-label="Toggle Fit/Fill">Fit</button>
+    <button id="fullscreenBtn" aria-label="Enter Fullscreen"><img src="/files/fullscreen-logo.png" alt="Fullscreen Icon"></button>
+    <button id="downloadBtn" aria-label="Download Video"><img src="/files/download.png" alt="Download Icon"></button>
+    <button id="shareBtn" style="display: none;" aria-label="Share Video"><img src="/files/share.png" alt="Share Icon"></button>
+    <button id="modeBtn" aria-label="Toggle Mode">Reels</button>
   </div>
 
   <script>
-
 const videoContainer = document.getElementById('video-container');
 const soundBtn = document.getElementById('soundBtn');
 const soundIcon = document.getElementById('soundIcon');
@@ -45,6 +44,7 @@ const fullscreenBtn = document.getElementById('fullscreenBtn');
 const downloadBtn = document.getElementById('downloadBtn');
 const shareBtn = document.getElementById('shareBtn');
 const modeBtn = document.getElementById('modeBtn');
+const loading = document.getElementById('loading');
 
 let videosData = [];
 let videoOrder = [];
@@ -54,18 +54,23 @@ let isMuted = true;
 let isContain = true;
 let currentJson = '/files/videos.json';
 
-// Load videos from JSON
-function loadVideos(jsonFile) {
-  fetch(jsonFile)
-    .then(res => res.json())
-    .then(data => {
-      videosData = data;
-      shuffleVideos();
-      videoContainer.innerHTML = '';
-      current = 0;
-      createVideos();
-      showVideo(current);
-    });
+async function loadVideos(jsonFile) {
+  loading.style.display = 'block';
+  try {
+    const res = await fetch(jsonFile);
+    if (!res.ok) throw new Error("Failed to load JSON");
+    const data = await res.json();
+    videosData = data;
+    shuffleVideos();
+    videoContainer.innerHTML = '';
+    current = 0;
+    createVideos();
+    showVideo(current);
+    loading.style.display = 'none';
+  } catch (err) {
+    console.error("Error loading videos:", err);
+    loading.textContent = 'Failed to load videos.';
+  }
 }
 
 loadVideos(currentJson);
@@ -81,7 +86,6 @@ function shuffleVideos() {
 function createVideos() {
   videoOrder.forEach(videoIndex => {
     const video = videosData[videoIndex];
-
     const wrapper = document.createElement('div');
     wrapper.classList.add('video-wrapper');
 
@@ -101,20 +105,53 @@ function createVideos() {
       </div>
     `;
 
-    vid.addEventListener('click', () => showInfo(info));
+    let dragging = false;
 
-    info.querySelector('.progress-bar-container').addEventListener('click', e => {
+    const progressBarContainer = info.querySelector('.progress-bar-container');
+    const progressBar = info.querySelector('.progress-bar');
+
+    const seek = (e) => {
       if (!vid.duration) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const percentage = clickX / rect.width;
+      const rect = progressBarContainer.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const percentage = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
       vid.currentTime = percentage * vid.duration;
+    };
+
+    // Desktop drag
+    progressBarContainer.addEventListener('mousedown', e => {
+      dragging = true;
+      seek(e);
     });
 
+    document.addEventListener('mousemove', e => {
+      if (dragging) seek(e);
+    });
+
+    document.addEventListener('mouseup', () => {
+      dragging = false;
+    });
+
+    // Mobile drag
+    progressBarContainer.addEventListener('touchstart', e => {
+      dragging = true;
+      seek(e);
+    }, { passive: true });
+
+    document.addEventListener('touchmove', e => {
+      if (dragging) seek(e);
+    }, { passive: true });
+
+    document.addEventListener('touchend', () => {
+      dragging = false;
+    });
+
+    vid.addEventListener('click', () => showInfo(info));
+
     vid.addEventListener('timeupdate', () => {
-      if (vid.duration) {
+      if (vid.duration && !dragging) {
         const progress = (vid.currentTime / vid.duration) * 100;
-        info.querySelector('.progress-bar').style.width = progress + '%';
+        progressBar.style.width = progress + '%';
       }
     });
 
@@ -135,10 +172,8 @@ function showInfo(info) {
 function loadVideo(index) {
   const wrappers = document.querySelectorAll('.video-wrapper');
   if (index < 0 || index >= wrappers.length) return;
-
   const vid = wrappers[index].querySelector('video');
   const data = videosData[videoOrder[index]];
-
   if (!vid.src) {
     vid.src = data.src;
     vid.load();
@@ -150,9 +185,7 @@ function showVideo(index, withTransition = true) {
 
   wrappers.forEach((wrapper, i) => {
     const vid = wrapper.querySelector('video');
-    wrapper.style.transition = withTransition
-      ? "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)"
-      : "none";
+    wrapper.style.transition = withTransition ? "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)" : "none";
     wrapper.style.transform = `translateY(${(i - index) * 100}%)`;
 
     if (i === index) {
@@ -160,7 +193,7 @@ function showVideo(index, withTransition = true) {
       vid.muted = isMuted;
       vid.style.objectFit = isContain ? 'contain' : 'cover';
       vid.play().catch(() => {});
-    } else if (i === index + 1) {
+    } else if (i === index + 1 || i === index - 1) {
       loadVideo(i);
       vid.pause();
     } else {
@@ -173,34 +206,30 @@ function showVideo(index, withTransition = true) {
 
 function nextVideo() {
   current = (current + 1) % videoOrder.length;
-  showVideo(current, true);
+  showVideo(current);
 }
 
 function prevVideo() {
   current = (current - 1 + videoOrder.length) % videoOrder.length;
-  showVideo(current, true);
+  showVideo(current);
 }
 
-// Controls
+// Control buttons
 soundBtn.addEventListener('click', () => {
   isMuted = !isMuted;
-  document.querySelectorAll('.video-wrapper video').forEach(v => v.muted = isMuted);
+  document.querySelectorAll('video').forEach(v => v.muted = isMuted);
   soundIcon.src = isMuted ? '/files/mute.png' : '/files/unmute.png';
 });
 
 fitBtn.addEventListener('click', () => {
   isContain = !isContain;
-  document.querySelectorAll('.video-wrapper video').forEach(v => {
-    v.style.objectFit = isContain ? 'contain' : 'cover';
-  });
+  document.querySelectorAll('video').forEach(v => v.style.objectFit = isContain ? 'contain' : 'cover');
   fitBtn.textContent = isContain ? 'Fit' : 'Fill';
 });
 
 fullscreenBtn.addEventListener('click', () => {
   const vid = document.querySelectorAll('.video-wrapper')[current].querySelector('video');
-
   if (vid.requestFullscreen) vid.requestFullscreen();
-  else if (vid.webkitEnterFullscreen) vid.webkitEnterFullscreen();
   else if (vid.webkitRequestFullscreen) vid.webkitRequestFullscreen();
   else if (vid.msRequestFullscreen) vid.msRequestFullscreen();
 
@@ -209,7 +238,6 @@ fullscreenBtn.addEventListener('click', () => {
     if (aspect > 1) screen.orientation?.lock('landscape').catch(() => {});
     else screen.orientation?.lock('portrait').catch(() => {});
   };
-
   if (vid.readyState >= 1) setOrientation();
   else vid.addEventListener('loadedmetadata', setOrientation, { once: true });
 });
@@ -250,18 +278,16 @@ modeBtn.addEventListener('click', () => {
   loadVideos(currentJson);
 });
 
-// Swipe handling
+// Swiping
 let startY = 0, isSwiping = false;
-
 document.addEventListener('touchstart', e => {
   if (e.touches.length !== 1) return;
   startY = e.touches[0].clientY;
   isSwiping = true;
-
   const wrappers = document.querySelectorAll('.video-wrapper');
   [current - 1, current, current + 1].forEach(i => {
     if (i >= 0 && i < wrappers.length) {
-      wrappers[i].style.transition = "none"; // disable transition while dragging
+      wrappers[i].style.transition = "none";
     }
   });
 }, { passive: false });
@@ -270,7 +296,6 @@ document.addEventListener('touchmove', e => {
   if (!isSwiping) return;
   const moveY = e.touches[0].clientY;
   const deltaY = moveY - startY;
-
   const wrappers = document.querySelectorAll('.video-wrapper');
   [current - 1, current, current + 1].forEach(i => {
     if (i >= 0 && i < wrappers.length) {
@@ -282,33 +307,18 @@ document.addEventListener('touchmove', e => {
 document.addEventListener('touchend', e => {
   if (!isSwiping) return;
   isSwiping = false;
-
   const endY = e.changedTouches[0].clientY;
   const deltaY = startY - endY;
-
   if (deltaY > 50) nextVideo();
   else if (deltaY < -50) prevVideo();
-  else showVideo(current, true); // snap back smoothly
-}, { passive: false });
+  else showVideo(current);
+});
 
 // Keyboard support
 document.addEventListener('keydown', e => {
   if (e.key === 'ArrowUp') prevVideo();
   else if (e.key === 'ArrowDown') nextVideo();
 });
-
-// Disable pull-to-refresh
-let touchStartY = 0;
-document.addEventListener('touchstart', e => { 
-  if (e.touches.length === 1) touchStartY = e.touches[0].clientY; 
-}, { passive:false });
-document.addEventListener('touchmove', e => {
-  const touchCurrentY = e.touches[0].clientY;
-  const scrollTop = window.scrollY || document.documentElement.scrollTop;
-  if(scrollTop === 0 && touchCurrentY > touchStartY) e.preventDefault();
-}, { passive:false });
-
-
-</script>
+  </script>
 </body>
 </html>
