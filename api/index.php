@@ -98,6 +98,17 @@ function createBatch(count) {
     vid.setAttribute('preload', 'none');
     vid.style.objectFit = isContain ? 'contain' : 'cover';
 
+    // Spinner
+    const spinner = document.createElement('div');
+    spinner.classList.add('spinner');
+    spinner.innerHTML = `<div class="loader"></div>`;
+
+    // Error message
+    const errorMsg = document.createElement('div');
+    errorMsg.classList.add('error-msg');
+    errorMsg.textContent = "Failed to load video";
+
+    // Video info (title + progress bar)
     const info = document.createElement('div');
     info.classList.add('video-info');
     info.innerHTML = `
@@ -109,7 +120,27 @@ function createBatch(count) {
 
     vid.addEventListener('click', () => showInfo(info));
 
-    // Progress bar with drag support
+    // Show spinner when loading
+    vid.addEventListener('waiting', () => {
+      spinner.style.display = 'flex';
+      errorMsg.style.display = 'none';
+    });
+
+    // Hide spinner when video can play
+    vid.addEventListener('canplay', () => {
+      spinner.style.display = 'none';
+    });
+    vid.addEventListener('playing', () => {
+      spinner.style.display = 'none';
+    });
+
+    // Error handling
+    vid.addEventListener('error', () => {
+      spinner.style.display = 'none';
+      errorMsg.style.display = 'block';
+    });
+
+    // Progress bar (with drag support like before)
     const progressContainer = info.querySelector('.progress-bar-container');
     const progressBar = info.querySelector('.progress-bar');
     let isDragging = false;
@@ -152,7 +183,7 @@ function createBatch(count) {
       if (isDragging) isDragging = false;
     });
 
-    // Progress update while playing
+    // Update progress while playing
     vid.addEventListener('timeupdate', () => {
       if (!isDragging && vid.duration) {
         const progress = (vid.currentTime / vid.duration) * 100;
@@ -163,11 +194,14 @@ function createBatch(count) {
     vid.addEventListener('ended', () => nextVideo());
 
     wrapper.appendChild(vid);
+    wrapper.appendChild(spinner);
+    wrapper.appendChild(errorMsg);
     wrapper.appendChild(info);
     videoContainer.appendChild(wrapper);
   }
   loadedCount = end;
 }
+
 
 function maybeLoadMore() {
   if (current >= loadedCount - 2 && loadedCount < videoOrder.length) {
