@@ -361,7 +361,7 @@ shareBtn.addEventListener('click', async () => {
 modeBtn.addEventListener('click', () => {
   if (modeBtn.textContent === 'Reels') {
     modeBtn.textContent = 'MMS';
-    currentJson = '/files/mms_videos.json';
+    currentJson = 'https://script.google.com/macros/s/AKfycbxMBFy1Zix7peh_8LGjJewllsmGvFiO4BNr74X1R5bPZhHWVUlaDXb1Ma4PKuurBWMc/exec';
   } else {
     modeBtn.textContent = 'Reels';
     currentJson = '/files/videos.json';
