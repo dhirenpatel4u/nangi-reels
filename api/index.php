@@ -56,6 +56,7 @@ let currentJson = '/files/videos.json';
 
 const INITIAL_BATCH = 40;
 const LOAD_MORE_BATCH = 25;
+const MAX_PREVIOUS = 50;
 let loadedCount = 0; // how many videos created in DOM
 
 // Load videos from JSON
@@ -219,8 +220,18 @@ function createBatch(count) {
 
 
 function maybeLoadMore() {
+  // Load next batch when user reaches second-last video
   if (current >= loadedCount - 2 && loadedCount < videoOrder.length) {
     createBatch(LOAD_MORE_BATCH);
+  }
+  cleanOldVideos();
+}
+
+function cleanOldVideos() {
+  const wrappers = document.querySelectorAll('.video-wrapper');
+  const removeCount = Math.max(0, wrappers.length - (current + MAX_PREVIOUS));
+  for (let i = 0; i < removeCount; i++) {
+    wrappers[i].remove();
   }
 }
 
