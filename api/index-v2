@@ -156,22 +156,32 @@ function createBatch(count) {
     }
 
     // Mouse drag
-    progressContainer.addEventListener('mousedown', e => {
-      isDragging = true;
-      updateSeek(e.clientX);
-    });
+	progressContainer.addEventListener('mousedown', e => {
+  		isDragging = true;
+  		clearTimeout(hideInfoTimeout); // stop hiding
+  		info.style.opacity = '1'; // keep visible
+  		updateSeek(e.clientX);
+	});
 
     document.addEventListener('mousemove', e => {
       if (isDragging) updateSeek(e.clientX);
     });
 
-    document.addEventListener('mouseup', () => {
-      if (isDragging) isDragging = false;
-    });
+	document.addEventListener('mouseup', () => {
+  		if (isDragging) {
+    		isDragging = false;
+    		// restart hide timer AFTER 5s
+    		hideInfoTimeout = setTimeout(() => {
+      		info.style.opacity = '0';
+    		}, 5000);
+  		}
+	});
 
     // Touch drag
     progressContainer.addEventListener('touchstart', e => {
       isDragging = true;
+	  clearTimeout(hideInfoTimeout);
+  	  info.style.opacity = '1';
       updateSeek(e.touches[0].clientX);
     }, { passive: true });
 
@@ -179,9 +189,14 @@ function createBatch(count) {
       if (isDragging) updateSeek(e.touches[0].clientX);
     }, { passive: true });
 
-    document.addEventListener('touchend', () => {
-      if (isDragging) isDragging = false;
-    });
+	document.addEventListener('touchend', () => {
+  		if (isDragging) {
+    		isDragging = false;
+    		hideInfoTimeout = setTimeout(() => {
+      		info.style.opacity = '0';
+    		}, 5000);
+  		}
+	});
 
     // Update progress while playing
     vid.addEventListener('timeupdate', () => {
@@ -209,10 +224,18 @@ function maybeLoadMore() {
   }
 }
 
+let hideInfoTimeout;
+let isDragging = false; // global state so hide timer doesn’t run while dragging
+
 function showInfo(info) {
-  info.classList.add('show');
-  clearTimeout(infoTimeout);
-  infoTimeout = setTimeout(() => info.classList.remove('show'), 5000);
+  info.style.opacity = '1';
+  clearTimeout(hideInfoTimeout);
+
+  if (!isDragging) {
+    hideInfoTimeout = setTimeout(() => {
+      info.style.opacity = '0';
+    }, 5000);
+  }
 }
 
 function loadVideo(index) {
