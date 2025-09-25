@@ -28,7 +28,7 @@
     },
     {
       "src": "/",
-      "dest": "/api/index.php",
+      "dest": "/api/home.php",
       "headers": {
         "Cache-Control": "max-age=20, public"
       }
@@ -64,6 +64,7 @@
   ],
   "regions": ["bom1"]
 }
+
 
 
 
