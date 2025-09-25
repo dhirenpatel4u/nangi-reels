@@ -103,10 +103,6 @@ video {
   font-weight: bold;
 }
 
-#top-controls button:hover {
-  background: rgba(255,255,255,0.2); /* subtle hover effect */
-}
-
 #top-controls button img {
   width: 24px;
   height: 24px;
@@ -147,4 +143,9 @@ video {
   border-radius: 8px;
   display: none;
   z-index: 11;
+}
+@media screen and (min-width: 768px) { /* desktop screens */
+  #top-controls button:hover {
+  background: rgba(255,255,255,0.2); /* subtle hover effect */
+  }
 }
