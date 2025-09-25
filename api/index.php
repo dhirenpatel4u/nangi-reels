@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0" />
-  <title>Nangi Reels</title>
-  <meta property="og:site_name" content="Nangi Reels">
+  <title>N@ngi Reels</title>
+  <meta property="og:site_name" content="N@ngi Reels">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="description" content="Watch Hot Reels">
-  <meta name="keywords" content="Hot Reels, Nangi Reels, Adult Reels">
+  <meta name="keywords" content="Hot Reels, N@ngi Reels, @dult Reels">
 	<meta name="robots" content="index, follow">
   <meta name="language" content="English">
-  <meta name="author" content="Nangi Reels LLP">
-  <meta property="og:title" content="Nangi Reels">
+  <meta name="author" content="N@ngi Reels LLP">
+  <meta property="og:title" content="N@ngi Reels">
   <meta property="og:description" content="Watch Hot Reels">
   <meta property="og:image" content="/files/your-logo.png">
   <meta property="og:type" content="website">
@@ -361,7 +361,7 @@ shareBtn.addEventListener('click', async () => {
 modeBtn.addEventListener('click', () => {
   if (modeBtn.textContent === 'Reels') {
     modeBtn.textContent = 'MMS';
-    currentJson = 'https://script.google.com/macros/s/AKfycbxMBFy1Zix7peh_8LGjJewllsmGvFiO4BNr74X1R5bPZhHWVUlaDXb1Ma4PKuurBWMc/exec';
+    currentJson = '/files/mms_videos.json';
   } else {
     modeBtn.textContent = 'Reels';
     currentJson = '/files/videos.json';
