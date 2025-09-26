@@ -33,6 +33,13 @@
         "Cache-Control": "max-age=20, public"
       }
     },
+        {
+      "src": "/test.php",
+      "dest": "/api/test.php",
+      "headers": {
+        "Cache-Control": "max-age=20, public"
+      }
+    },
     {
       "src": "/files/style.css",
       "dest": "/files/style.css",
@@ -64,6 +71,7 @@
   ],
   "regions": ["bom1"]
 }
+
 
 
 
